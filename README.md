@@ -4,10 +4,10 @@ A full-stack inventory management system built with a Java Swing desktop client 
 
 ## Team Members
 
-- Baillo, Abigail
-- Cabatac, Alma
+- Baillo, Abigail G.
+- Cabatac, Alma J.
 - De Guzman, Nicko G.
-- Dumpit, Luzviminda
+- Dumpit, Luzviminda G.
 - Tarroja, Juanito III S.
 
 ## Architecture
