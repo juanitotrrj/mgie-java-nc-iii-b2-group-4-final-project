@@ -1,0 +1,100 @@
+package com.group4.inventoryserver;
+
+import com.group4.inventoryserver.config.AppConfig;
+import com.group4.inventoryserver.config.DatabaseConfig;
+import com.group4.inventoryserver.config.EnvConfig;
+import com.group4.inventoryserver.handler.HealthHandler;
+import com.group4.inventoryserver.migration.MigrationGenerator;
+import com.group4.inventoryserver.migration.MigrationRunner;
+import com.group4.inventoryserver.server.HttpServerBootstrap;
+import com.group4.inventoryserver.server.Router;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class Main {
+
+  private static final Logger log = LoggerFactory.getLogger(Main.class);
+
+  public static void main(String[] args) {
+    if (args.length > 0) {
+      handleCommand(args);
+      return;
+    }
+
+    startServer();
+  }
+
+  private static void handleCommand(String[] args) {
+    String command = args[0];
+    switch (command) {
+      case "migrate":
+        DatabaseConfig.initialize();
+        new MigrationRunner().migrate();
+        DatabaseConfig.shutdown();
+        break;
+
+      case "migrate:status":
+        DatabaseConfig.initialize();
+        new MigrationRunner().status();
+        DatabaseConfig.shutdown();
+        break;
+
+      case "migrate:rollback":
+        DatabaseConfig.initialize();
+        new MigrationRunner().rollback();
+        DatabaseConfig.shutdown();
+        break;
+
+      case "migrate:generate":
+        if (args.length < 2) {
+          System.err.println("Usage: migrate:generate <description>");
+          System.err.println("Example: migrate:generate create_users_table");
+          System.exit(1);
+        }
+        new MigrationGenerator().generate(args[1]);
+        break;
+
+      default:
+        System.err.println("Unknown command: " + command);
+        System.err.println("Available commands:");
+        System.err.println("  (no args)          Start the server");
+        System.err.println("  migrate            Run pending migrations");
+        System.err.println("  migrate:status     Show migration status");
+        System.err.println("  migrate:rollback   Rollback last migration");
+        System.err.println("  migrate:generate   Generate a new migration file");
+        System.exit(1);
+    }
+  }
+
+  private static void startServer() {
+    try {
+      AppConfig.initialize();
+      DatabaseConfig.initialize();
+
+      if (EnvConfig.dbRunMigrationsOnStartup()) {
+        log.info("Running database migrations on startup...");
+        new MigrationRunner().migrate();
+      }
+
+      Router router = new Router();
+      String contextPath = EnvConfig.appContextPath();
+      router.register(contextPath + "/health", new HealthHandler());
+
+      HttpServerBootstrap server = new HttpServerBootstrap(router);
+      server.start();
+
+      Runtime.getRuntime()
+          .addShutdownHook(
+              new Thread(
+                  () -> {
+                    log.info("Shutting down...");
+                    server.stop();
+                    DatabaseConfig.shutdown();
+                  }));
+
+    } catch (Exception e) {
+      log.error("Failed to start server: {}", e.getMessage(), e);
+      System.exit(1);
+    }
+  }
+}
