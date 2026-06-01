@@ -5,8 +5,11 @@ import com.group4.inventoryserver.config.DatabaseConfig;
 import com.group4.inventoryserver.config.EnvConfig;
 import com.group4.inventoryserver.handler.AboutHandler;
 import com.group4.inventoryserver.handler.ContactHandler;
+import com.group4.inventoryserver.handler.CurrentUserHandler;
 import com.group4.inventoryserver.handler.HealthHandler;
 import com.group4.inventoryserver.handler.InquiryHandler;
+import com.group4.inventoryserver.handler.LoginHandler;
+import com.group4.inventoryserver.handler.LogoutHandler;
 import com.group4.inventoryserver.handler.WelcomeHandler;
 import com.group4.inventoryserver.migration.MigrationGenerator;
 import com.group4.inventoryserver.migration.MigrationRunner;
@@ -87,6 +90,9 @@ public class Main {
       router.register(contextPath + "/public/about", new AboutHandler());
       router.register(contextPath + "/public/contact", new ContactHandler());
       router.register(contextPath + "/public/inquiries", new InquiryHandler());
+      router.register(contextPath + "/auth/login", new LoginHandler());
+      router.register(contextPath + "/auth/logout", new LogoutHandler());
+      router.register(contextPath + "/auth/me", new CurrentUserHandler());
 
       HttpServerBootstrap server = new HttpServerBootstrap(router);
       server.start();

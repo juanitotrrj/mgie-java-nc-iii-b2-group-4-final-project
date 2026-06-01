@@ -2,6 +2,7 @@ package com.group4.inventoryserver.handler;
 
 import com.group4.inventoryserver.dto.ApiResponse;
 import com.group4.inventoryserver.exception.ApiException;
+import com.group4.inventoryserver.exception.UnauthorizedException;
 import com.group4.inventoryserver.server.JsonResponse;
 import com.group4.inventoryserver.server.RequestContext;
 import com.group4.inventoryserver.util.JsonUtil;
@@ -77,5 +78,18 @@ public abstract class BaseHandler {
       throw new ApiException(400, "Request body is required");
     }
     return JsonUtil.fromJson(body, clazz);
+  }
+
+  protected long getAuthUserId(RequestContext ctx) {
+    Object userId = ctx.getExchange().getAttribute("authUserId");
+    if (userId == null) {
+      throw new UnauthorizedException("Authentication required.");
+    }
+    return ((Number) userId).longValue();
+  }
+
+  protected String getAuthRole(RequestContext ctx) {
+    Object role = ctx.getExchange().getAttribute("authRole");
+    return role != null ? role.toString() : null;
   }
 }

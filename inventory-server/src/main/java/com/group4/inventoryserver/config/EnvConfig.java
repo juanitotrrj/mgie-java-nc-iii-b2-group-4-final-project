@@ -75,7 +75,7 @@ public final class EnvConfig {
   }
 
   public static String dbName() {
-    return get("DB_NAME", "inventory_system_group4");
+    return get("DB_NAME", "g4ims_local");
   }
 
   public static String dbUser() {

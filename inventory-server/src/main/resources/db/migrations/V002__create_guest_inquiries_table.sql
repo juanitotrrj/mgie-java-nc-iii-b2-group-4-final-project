@@ -1,4 +1,3 @@
--- Up
 CREATE TABLE IF NOT EXISTS guest_inquiries (
   guest_inquiry_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(150) NOT NULL,
@@ -16,5 +15,3 @@ CREATE TABLE IF NOT EXISTS guest_inquiries (
   KEY idx_guest_inquiries_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Down
--- DROP TABLE IF EXISTS guest_inquiries;
