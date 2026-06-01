@@ -1,1 +1,2 @@
 V001__create_schema_migrations_table.sql
+V002__create_guest_inquiries_table.sql

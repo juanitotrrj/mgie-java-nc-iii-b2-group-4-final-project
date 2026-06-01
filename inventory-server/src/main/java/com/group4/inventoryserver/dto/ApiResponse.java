@@ -13,7 +13,7 @@ public class ApiResponse<T> {
   }
 
   public static <T> ApiResponse<T> success(T data) {
-    return new ApiResponse<>(true, data, null);
+    return new ApiResponse<>(true, data, "Request completed successfully.");
   }
 
   public static <T> ApiResponse<T> success(T data, String message) {

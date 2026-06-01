@@ -2,6 +2,7 @@ package com.group4.inventoryserver.server;
 
 import com.group4.inventoryserver.dto.ErrorResponse;
 import com.group4.inventoryserver.exception.ApiException;
+import com.group4.inventoryserver.exception.ValidationException;
 import com.group4.inventoryserver.handler.BaseHandler;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -30,6 +31,8 @@ public class Router implements HttpHandler {
         try {
           RequestContext ctx = new RequestContext(exchange);
           route.handler.handle(ctx);
+        } catch (ValidationException e) {
+          sendValidationError(exchange, e);
         } catch (ApiException e) {
           sendError(exchange, e.getStatusCode(), e.getMessage());
         } catch (Exception e) {
@@ -46,6 +49,12 @@ public class Router implements HttpHandler {
   private void sendError(HttpExchange exchange, int status, String message) throws IOException {
     ErrorResponse error = new ErrorResponse(status, message);
     JsonResponse.send(exchange, status, error);
+  }
+
+  private void sendValidationError(HttpExchange exchange, ValidationException e)
+      throws IOException {
+    ErrorResponse error = new ErrorResponse(e.getMessage(), e.getFieldErrors());
+    JsonResponse.send(exchange, e.getStatusCode(), error);
   }
 
   private static class Route {
