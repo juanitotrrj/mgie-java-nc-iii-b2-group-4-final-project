@@ -32,8 +32,17 @@ public class AuthService {
   private static final Set<String> VALID_ROLES =
       new HashSet<>(Arrays.asList("Administrator", "Manager", "Inventory Clerk", "Cashier"));
 
-  private final UserRepository userRepository = new UserRepository();
-  private final SessionRepository sessionRepository = new SessionRepository();
+  private final UserRepository userRepository;
+  private final SessionRepository sessionRepository;
+
+  public AuthService() {
+    this(new UserRepository(), new SessionRepository());
+  }
+
+  AuthService(UserRepository userRepository, SessionRepository sessionRepository) {
+    this.userRepository = userRepository;
+    this.sessionRepository = sessionRepository;
+  }
 
   public LoginData login(LoginRequest request, String ip, String userAgent) {
     validateLoginRequest(request);
