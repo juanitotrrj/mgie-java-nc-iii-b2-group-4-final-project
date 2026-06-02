@@ -4,6 +4,7 @@ import com.group4.inventoryserver.config.AppConfig;
 import com.group4.inventoryserver.config.DatabaseConfig;
 import com.group4.inventoryserver.config.EnvConfig;
 import com.group4.inventoryserver.handler.AboutHandler;
+import com.group4.inventoryserver.handler.CategoryHandler;
 import com.group4.inventoryserver.handler.ContactHandler;
 import com.group4.inventoryserver.handler.CurrentUserHandler;
 import com.group4.inventoryserver.handler.HealthHandler;
@@ -95,6 +96,7 @@ public class Main {
       router.register(contextPath + "/auth/logout", new LogoutHandler());
       router.register(contextPath + "/auth/me", new CurrentUserHandler());
       router.register(contextPath + "/products", new ProductHandler());
+      router.register(contextPath + "/categories", new CategoryHandler());
 
       HttpServerBootstrap server = new HttpServerBootstrap(router);
       server.start();
