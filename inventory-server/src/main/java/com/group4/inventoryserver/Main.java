@@ -4,9 +4,11 @@ import com.group4.inventoryserver.config.AppConfig;
 import com.group4.inventoryserver.config.DatabaseConfig;
 import com.group4.inventoryserver.config.EnvConfig;
 import com.group4.inventoryserver.handler.AboutHandler;
+import com.group4.inventoryserver.handler.AuditLogHandler;
 import com.group4.inventoryserver.handler.CategoryHandler;
 import com.group4.inventoryserver.handler.ContactHandler;
 import com.group4.inventoryserver.handler.CurrentUserHandler;
+import com.group4.inventoryserver.handler.DashboardHandler;
 import com.group4.inventoryserver.handler.HealthHandler;
 import com.group4.inventoryserver.handler.IcrHandler;
 import com.group4.inventoryserver.handler.InquiryHandler;
@@ -103,6 +105,7 @@ public class Main {
       router.register(contextPath + "/auth/login", new LoginHandler());
       router.register(contextPath + "/auth/logout", new LogoutHandler());
       router.register(contextPath + "/auth/me", new CurrentUserHandler());
+      router.register(contextPath + "/dashboard", new DashboardHandler());
       router.register(contextPath + "/products", new ProductHandler());
       router.register(contextPath + "/categories", new CategoryHandler());
       router.register(contextPath + "/suppliers", new SupplierHandler());
@@ -113,6 +116,7 @@ public class Main {
       router.register(contextPath + "/stock-movements", new StockMovementHandler());
       router.register(contextPath + "/reports", new ReportHandler());
       router.register(contextPath + "/settings", new SettingsHandler());
+      router.register(contextPath + "/audit-logs", new AuditLogHandler());
 
       HttpServerBootstrap server = new HttpServerBootstrap(router);
       server.start();

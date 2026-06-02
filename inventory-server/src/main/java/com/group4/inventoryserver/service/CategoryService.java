@@ -52,6 +52,11 @@ public class CategoryService {
     return new PaginatedResponse<>(data, meta);
   }
 
+  public List<CategoryData> listAll(String search, String status, String type) {
+    return categoryRepository.findAll(
+        0, Integer.MAX_VALUE, "categoryName", "asc", search, status, type);
+  }
+
   public CategoryData getById(long categoryId) {
     CategoryData category = categoryRepository.findById(categoryId);
     if (category == null) {

@@ -8,12 +8,17 @@ import com.group4.inventoryserver.dto.user.UserCreateRequest;
 import com.group4.inventoryserver.dto.user.UserData;
 import com.group4.inventoryserver.dto.user.UserUpdateRequest;
 import com.group4.inventoryserver.exception.ApiException;
+import com.group4.inventoryserver.exception.ValidationException;
 import com.group4.inventoryserver.server.JsonResponse;
 import com.group4.inventoryserver.server.RequestContext;
 import com.group4.inventoryserver.service.UserService;
+import com.group4.inventoryserver.util.ExportUtil;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class UserHandler extends BaseHandler {
@@ -44,6 +49,8 @@ public class UserHandler extends BaseHandler {
 
     if (pathParam == null || pathParam.isEmpty()) {
       handleCollection(ctx, method);
+    } else if ("export".equals(pathParam)) {
+      handleExport(ctx);
     } else if (pathParam.matches("\\d+/reset-password")) {
       handleResetPassword(ctx, pathParam);
     } else if (pathParam.matches("\\d+")) {
@@ -124,5 +131,58 @@ public class UserHandler extends BaseHandler {
     long authUserId = getAuthUserId(ctx);
     userService.deactivate(userId, authUserId);
     sendNoContent(ctx);
+  }
+
+  private void handleExport(RequestContext ctx) throws IOException {
+    if (!"GET".equals(ctx.getMethod())) {
+      throw new ApiException(405, "Method Not Allowed: " + ctx.getMethod());
+    }
+    requirePermission(ctx, "EXPORT_DATA");
+    String search = ctx.getQueryParam("search");
+    String role = ctx.getQueryParam("role");
+    String status = ctx.getQueryParam("status");
+    String format = ctx.getQueryParam("format");
+    if (format == null || format.trim().isEmpty()) format = "csv";
+    format = format.toLowerCase();
+    if (!"csv".equals(format) && !"xlsx".equals(format)) {
+      throw new ValidationException("Supported formats: csv, xlsx");
+    }
+
+    List<UserData> users = userService.listAll(search, role, status);
+    String[] headers = {
+      "User Code", "Full Name", "Username", "Email", "Role", "Status", "Created At"
+    };
+    List<String[]> rows = new ArrayList<>();
+    for (UserData u : users) {
+      rows.add(
+          new String[] {
+            u.getUserCode() != null ? u.getUserCode() : "",
+            u.getFullName() != null ? u.getFullName() : "",
+            u.getUsername(),
+            u.getEmail() != null ? u.getEmail() : "",
+            u.getRole(),
+            u.getStatus(),
+            u.getCreatedAt() != null ? u.getCreatedAt() : ""
+          });
+    }
+
+    byte[] content;
+    String contentType;
+    if ("xlsx".equals(format)) {
+      content = ExportUtil.toXlsx("users", headers, rows);
+      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    } else {
+      content = ExportUtil.toCsv(headers, rows);
+      contentType = "text/csv; charset=UTF-8";
+    }
+    String filename = "users-export." + format;
+    ctx.getExchange().getResponseHeaders().set("Content-Type", contentType);
+    ctx.getExchange()
+        .getResponseHeaders()
+        .set("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+    ctx.getExchange().sendResponseHeaders(200, content.length);
+    try (OutputStream os = ctx.getExchange().getResponseBody()) {
+      os.write(content);
+    }
   }
 }

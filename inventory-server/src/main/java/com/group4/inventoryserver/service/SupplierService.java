@@ -55,6 +55,11 @@ public class SupplierService {
     return new PaginatedResponse<>(data, meta);
   }
 
+  public List<SupplierData> listAll(String search, String status, String type) {
+    return supplierRepository.findAll(
+        0, Integer.MAX_VALUE, "supplierName", "asc", search, status, type);
+  }
+
   public SupplierData getById(long supplierId) {
     SupplierData supplier = supplierRepository.findById(supplierId);
     if (supplier == null) {
