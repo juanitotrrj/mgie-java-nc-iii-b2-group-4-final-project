@@ -10,6 +10,7 @@ import com.group4.inventoryserver.handler.HealthHandler;
 import com.group4.inventoryserver.handler.InquiryHandler;
 import com.group4.inventoryserver.handler.LoginHandler;
 import com.group4.inventoryserver.handler.LogoutHandler;
+import com.group4.inventoryserver.handler.ProductHandler;
 import com.group4.inventoryserver.handler.WelcomeHandler;
 import com.group4.inventoryserver.migration.MigrationGenerator;
 import com.group4.inventoryserver.migration.MigrationRunner;
@@ -93,6 +94,7 @@ public class Main {
       router.register(contextPath + "/auth/login", new LoginHandler());
       router.register(contextPath + "/auth/logout", new LogoutHandler());
       router.register(contextPath + "/auth/me", new CurrentUserHandler());
+      router.register(contextPath + "/products", new ProductHandler());
 
       HttpServerBootstrap server = new HttpServerBootstrap(router);
       server.start();

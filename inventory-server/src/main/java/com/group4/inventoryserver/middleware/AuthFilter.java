@@ -1,6 +1,7 @@
 package com.group4.inventoryserver.middleware;
 
 import com.group4.inventoryserver.dto.ErrorResponse;
+import com.group4.inventoryserver.repository.UserRepository;
 import com.group4.inventoryserver.server.JsonResponse;
 import com.group4.inventoryserver.service.AuthService;
 import com.sun.net.httpserver.Filter;
@@ -8,6 +9,7 @@ import com.sun.net.httpserver.HttpExchange;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -24,6 +26,7 @@ public class AuthFilter extends Filter {
               "/api/public/inquiries"));
 
   private final AuthService authService = new AuthService();
+  private final UserRepository userRepository = new UserRepository();
 
   @Override
   public void doFilter(HttpExchange exchange, Chain chain) throws IOException {
@@ -47,11 +50,19 @@ public class AuthFilter extends Filter {
       return;
     }
 
-    exchange.setAttribute("authUserId", context.get("userId"));
+    long userId = ((Number) context.get("userId")).longValue();
+    exchange.setAttribute("authUserId", userId);
     exchange.setAttribute("authRole", context.get("role"));
     exchange.setAttribute("authUsername", context.get("username"));
     exchange.setAttribute("authSessionId", context.get("sessionId"));
     exchange.setAttribute("authToken", token);
+
+    Map<String, Object> user = userRepository.findById(userId);
+    if (user != null) {
+      long roleId = (Long) user.get("roleId");
+      List<String> permissions = userRepository.findPermissionsByRoleId(roleId);
+      exchange.setAttribute("authPermissions", new HashSet<>(permissions));
+    }
 
     chain.doFilter(exchange);
   }

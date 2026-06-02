@@ -2,3 +2,8 @@ V001__create_schema_migrations_table.sql
 V002__create_guest_inquiries_table.sql
 V003__create_auth_tables.sql
 V004__seed_roles_permissions_admin.sql
+V005__create_categories_table.sql
+V006__create_suppliers_table.sql
+V007__create_products_table.sql
+V008__create_stock_movements_table.sql
+V009__seed_categories_suppliers_products.sql
