@@ -14,6 +14,7 @@ import com.group4.inventoryserver.handler.LoginHandler;
 import com.group4.inventoryserver.handler.LogoutHandler;
 import com.group4.inventoryserver.handler.ProductHandler;
 import com.group4.inventoryserver.handler.PurchaseHandler;
+import com.group4.inventoryserver.handler.ReportHandler;
 import com.group4.inventoryserver.handler.SaleHandler;
 import com.group4.inventoryserver.handler.StockMovementHandler;
 import com.group4.inventoryserver.handler.SupplierHandler;
@@ -109,6 +110,7 @@ public class Main {
       router.register(contextPath + "/users", new UserHandler());
       router.register(contextPath + "/inventory-change-requests", new IcrHandler());
       router.register(contextPath + "/stock-movements", new StockMovementHandler());
+      router.register(contextPath + "/reports", new ReportHandler());
 
       HttpServerBootstrap server = new HttpServerBootstrap(router);
       server.start();
