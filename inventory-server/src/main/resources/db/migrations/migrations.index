@@ -16,3 +16,4 @@ V015__seed_sample_sales.sql
 V016__create_inventory_change_requests_table.sql
 V017__create_inventory_change_request_files_table.sql
 V018__seed_sample_inventory_change_requests.sql
+V019__seed_stock_movement_read_permission.sql

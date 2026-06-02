@@ -4,6 +4,8 @@ public class StockMovementData {
 
   private final long stockMovementId;
   private final long productId;
+  private final String productCode;
+  private final String productName;
   private final String movementType;
   private final String referenceType;
   private final Long referenceId;
@@ -13,11 +15,14 @@ public class StockMovementData {
   private final int quantityAfter;
   private final String remarks;
   private final Long createdBy;
+  private final String createdByName;
   private final String createdAt;
 
   public StockMovementData(
       long stockMovementId,
       long productId,
+      String productCode,
+      String productName,
       String movementType,
       String referenceType,
       Long referenceId,
@@ -27,9 +32,12 @@ public class StockMovementData {
       int quantityAfter,
       String remarks,
       Long createdBy,
+      String createdByName,
       String createdAt) {
     this.stockMovementId = stockMovementId;
     this.productId = productId;
+    this.productCode = productCode;
+    this.productName = productName;
     this.movementType = movementType;
     this.referenceType = referenceType;
     this.referenceId = referenceId;
@@ -39,6 +47,7 @@ public class StockMovementData {
     this.quantityAfter = quantityAfter;
     this.remarks = remarks;
     this.createdBy = createdBy;
+    this.createdByName = createdByName;
     this.createdAt = createdAt;
   }
 
@@ -48,6 +57,14 @@ public class StockMovementData {
 
   public long getProductId() {
     return productId;
+  }
+
+  public String getProductCode() {
+    return productCode;
+  }
+
+  public String getProductName() {
+    return productName;
   }
 
   public String getMovementType() {
@@ -84,6 +101,10 @@ public class StockMovementData {
 
   public Long getCreatedBy() {
     return createdBy;
+  }
+
+  public String getCreatedByName() {
+    return createdByName;
   }
 
   public String getCreatedAt() {

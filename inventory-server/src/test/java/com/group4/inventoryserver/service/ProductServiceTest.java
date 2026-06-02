@@ -464,6 +464,8 @@ public class ProductServiceTest {
         new StockMovementData(
             1L,
             1L,
+            "P001",
+            "Keyboard",
             "OPENING",
             "PRODUCT",
             1L,
@@ -473,6 +475,7 @@ public class ProductServiceTest {
             45,
             "Opening",
             1L,
+            "System Administrator",
             "2026-01-01T00:00:00Z");
     when(stockMovementRepository.findByProductId(1L, 0, 10))
         .thenReturn(Collections.singletonList(movement));
