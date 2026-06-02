@@ -4,6 +4,7 @@ import com.group4.inventoryserver.config.EnvConfig;
 import com.group4.inventoryserver.middleware.AuthFilter;
 import com.group4.inventoryserver.middleware.CorsFilter;
 import com.group4.inventoryserver.middleware.LoggingFilter;
+import com.group4.inventoryserver.middleware.SetupGuardFilter;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
@@ -37,6 +38,7 @@ public class HttpServerBootstrap {
     if (EnvConfig.corsEnabled()) {
       context.getFilters().add(new CorsFilter());
     }
+    context.getFilters().add(new SetupGuardFilter());
     context.getFilters().add(new AuthFilter());
 
     server.setExecutor(
