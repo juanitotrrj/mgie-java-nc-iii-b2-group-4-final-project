@@ -21,6 +21,7 @@ import com.group4.inventoryserver.handler.SaleHandler;
 import com.group4.inventoryserver.handler.SettingsHandler;
 import com.group4.inventoryserver.handler.StockMovementHandler;
 import com.group4.inventoryserver.handler.SupplierHandler;
+import com.group4.inventoryserver.handler.SwaggerHandler;
 import com.group4.inventoryserver.handler.UserHandler;
 import com.group4.inventoryserver.handler.WelcomeHandler;
 import com.group4.inventoryserver.migration.MigrationGenerator;
@@ -102,6 +103,9 @@ public class Main {
       router.register(contextPath + "/public/about", new AboutHandler());
       router.register(contextPath + "/public/contact", new ContactHandler());
       router.register(contextPath + "/public/inquiries", new InquiryHandler());
+      if (EnvConfig.swaggerEnabled()) {
+        router.register(contextPath + "/docs", new SwaggerHandler());
+      }
       router.register(contextPath + "/auth/login", new LoginHandler());
       router.register(contextPath + "/auth/logout", new LogoutHandler());
       router.register(contextPath + "/auth/me", new CurrentUserHandler());
