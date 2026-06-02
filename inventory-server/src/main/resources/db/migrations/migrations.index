@@ -7,3 +7,6 @@ V006__create_suppliers_table.sql
 V007__create_products_table.sql
 V008__create_stock_movements_table.sql
 V009__seed_categories_suppliers_products.sql
+V010__create_purchase_orders_table.sql
+V011__create_purchase_order_items_table.sql
+V012__seed_sample_purchase_orders.sql
