@@ -13,3 +13,6 @@ V012__seed_sample_purchase_orders.sql
 V013__create_sales_table.sql
 V014__create_sale_items_table.sql
 V015__seed_sample_sales.sql
+V016__create_inventory_change_requests_table.sql
+V017__create_inventory_change_request_files_table.sql
+V018__seed_sample_inventory_change_requests.sql
