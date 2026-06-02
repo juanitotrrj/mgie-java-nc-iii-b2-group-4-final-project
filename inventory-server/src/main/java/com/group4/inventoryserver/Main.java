@@ -13,6 +13,7 @@ import com.group4.inventoryserver.handler.LoginHandler;
 import com.group4.inventoryserver.handler.LogoutHandler;
 import com.group4.inventoryserver.handler.ProductHandler;
 import com.group4.inventoryserver.handler.PurchaseHandler;
+import com.group4.inventoryserver.handler.SaleHandler;
 import com.group4.inventoryserver.handler.SupplierHandler;
 import com.group4.inventoryserver.handler.WelcomeHandler;
 import com.group4.inventoryserver.migration.MigrationGenerator;
@@ -101,6 +102,7 @@ public class Main {
       router.register(contextPath + "/categories", new CategoryHandler());
       router.register(contextPath + "/suppliers", new SupplierHandler());
       router.register(contextPath + "/purchases", new PurchaseHandler());
+      router.register(contextPath + "/sales", new SaleHandler());
 
       HttpServerBootstrap server = new HttpServerBootstrap(router);
       server.start();
