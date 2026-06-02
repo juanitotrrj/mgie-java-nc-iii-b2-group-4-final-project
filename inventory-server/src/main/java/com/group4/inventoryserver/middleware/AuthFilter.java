@@ -23,7 +23,8 @@ public class AuthFilter extends Filter {
               "/api/public/welcome",
               "/api/public/about",
               "/api/public/contact",
-              "/api/public/inquiries"));
+              "/api/public/inquiries",
+              "/api/docs"));
 
   private final AuthService authService = new AuthService();
   private final UserRepository userRepository = new UserRepository();

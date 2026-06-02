@@ -1,0 +1,5397 @@
+openapi: 3.0.3
+info:
+  title: Inventory Management System - Group 4 Backend API
+  version: 1.0.0
+  description: 'OpenAPI specification for the Inventory Management System backend API.
+
+
+    The system is implemented as two programs:
+
+    1. A Java Swing desktop client that holds the user interface.
+
+    2. A Java SE 8 backend server that hosts REST-style API endpoints, handles authentication, authorization, validation,
+    business rules, stock movement, file upload, reports, exports, settings, and database access.
+
+
+    This contract is designed for Swagger API Explorer / Swagger UI testing.
+
+    '
+servers:
+- url: http://localhost:8080
+  description: Local Java SE 8 backend server
+- url: http://localhost:8080/api
+  description: Local API base path if mounted directly under /api
+tags:
+- name: System
+  description: Server health and connectivity endpoints.
+- name: Guest
+  description: Public guest-mode endpoints.
+- name: Authentication
+  description: Login, logout, and current user session endpoints.
+- name: Dashboard
+  description: Role-specific dashboard summary endpoints.
+- name: Products
+  description: Product inventory master data endpoints.
+- name: Categories
+  description: Product category master data endpoints.
+- name: Suppliers
+  description: Supplier master data endpoints.
+- name: Purchases
+  description: Purchase order and receiving endpoints.
+- name: Sales
+  description: Sales invoice, payment, receipt, and cancellation endpoints.
+- name: Inventory Change Requests
+  description: Inventory clerk stock adjustment request and manager approval endpoints.
+- name: Stock Movements
+  description: Stock audit trail endpoints.
+- name: Reports
+  description: Report generation and export endpoints.
+- name: Users
+  description: Administrator user management endpoints.
+- name: Settings
+  description: Administrator system settings and database utility endpoints.
+- name: Audit Logs
+  description: Administrator audit log endpoints.
+security:
+- bearerAuth: []
+paths:
+  /api/health:
+    get:
+      tags:
+      - System
+      summary: Test server connection
+      description: Public endpoint used by Guest and Login pages to verify that the backend API and database are reachable.
+      operationId: getHealth
+      responses:
+        '200':
+          description: Server and database health status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+  /api/public/welcome:
+    get:
+      tags:
+      - Guest
+      summary: Get guest welcome content
+      description: Returns public welcome screen data for Guest mode.
+      operationId: getPublicWelcome
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WelcomeResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+  /api/public/about:
+    get:
+      tags:
+      - Guest
+      summary: Get about system content
+      description: Returns public system overview, purpose, modules, benefits, and Guest limitations.
+      operationId: getPublicAbout
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AboutResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+  /api/public/contact:
+    get:
+      tags:
+      - Guest
+      summary: Get public contact information
+      description: Returns support contact details shown on the Guest Contact Us page.
+      operationId: getPublicContact
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+  /api/public/inquiries:
+    post:
+      tags:
+      - Guest
+      summary: Submit guest inquiry
+      description: Allows a Guest to submit a support inquiry.
+      operationId: createPublicInquiry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InquiryRequest'
+            examples:
+              sample:
+                summary: Guest inquiry
+                value:
+                  name: Juan Dela Cruz
+                  email: juan@example.com
+                  subject: System access request
+                  message: Please help me request a user account.
+      responses:
+        '201':
+          description: Created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InquiryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+  /api/auth/login:
+    post:
+      tags:
+      - Authentication
+      summary: Login
+      description: Authenticates a user using username, password, and selected role. Returns a bearer token and role permissions.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              administrator:
+                summary: Administrator login
+                value:
+                  username: admin
+                  password: Admin@123
+                  role: Administrator
+              cashier:
+                summary: Cashier login
+                value:
+                  username: jlim
+                  password: Cashier@123
+                  role: Cashier
+      responses:
+        '200':
+          description: Login successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security: []
+  /api/auth/logout:
+    post:
+      tags:
+      - Authentication
+      summary: Logout
+      description: Invalidates the current bearer token/session.
+      operationId: logout
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/auth/me:
+    get:
+      tags:
+      - Authentication
+      summary: Get current authenticated user
+      description: Returns the logged-in user's profile and permissions for menu/page access.
+      operationId: getCurrentUser
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/dashboard/admin:
+    get:
+      tags:
+      - Dashboard
+      summary: Get admin dashboard
+      description: Administrator dashboard summary including system-wide metrics and recent activity.
+      operationId: getAdminDashboard
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDashboardResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/dashboard/manager:
+    get:
+      tags:
+      - Dashboard
+      summary: Get manager dashboard
+      description: Manager dashboard summary including approvals, transactions, and top-selling items.
+      operationId: getManagerDashboard
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagerDashboardResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/dashboard/clerk:
+    get:
+      tags:
+      - Dashboard
+      summary: Get clerk dashboard
+      description: Inventory Clerk dashboard summary including request status and inventory activity.
+      operationId: getClerkDashboard
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClerkDashboardResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/dashboard/cashier:
+    get:
+      tags:
+      - Dashboard
+      summary: Get cashier dashboard
+      description: Cashier dashboard summary including today sales and recent sales.
+      operationId: getCashierDashboard
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CashierDashboardResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/products:
+    get:
+      tags:
+      - Products
+      summary: List products
+      description: Returns product records with search, filters, sorting, and pagination.
+      operationId: listProducts
+      security:
+      - bearerAuth: []
+      parameters:
+      - &id001
+        name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+        description: Page number.
+        example: 1
+      - &id002
+        name: size
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+        description: Page size.
+        example: 10
+      - &id003
+        name: sortBy
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Column/property to sort by.
+        example: createdAt
+      - &id004
+        name: sortDir
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - asc
+          - desc
+          default: asc
+        description: Sort direction.
+        example: asc
+      - &id005
+        name: search
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Keyword search.
+        example: keyboard
+      - name: categoryId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by category.
+        example: 1
+      - &id006
+        name: status
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Optional status filter.
+        example: Active
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Products
+      summary: Create product
+      description: Creates a product record. Opening quantity creates an opening stock movement if greater than zero.
+      operationId: createProduct
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateRequest'
+            examples:
+              keyboard:
+                summary: Create keyboard product
+                value:
+                  productCode: P001
+                  productName: Keyboard
+                  categoryId: 1
+                  supplierId: 1
+                  quantity: 45
+                  reorderLevel: 20
+                  unitPrice: 850.0
+                  status: In Stock
+      responses:
+        '201':
+          description: Created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/products/{productId}:
+    get:
+      tags:
+      - Products
+      summary: View product details
+      description: Returns full details of one product.
+      operationId: getProductById
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Product identifier.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+      - Products
+      summary: Update product
+      description: Updates product fields. Direct stock quantity updates are restricted and should use inventory change requests
+        when performed by Inventory Clerk.
+      operationId: updateProduct
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Product identifier.
+        example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdateRequest'
+            examples:
+              update:
+                summary: Update product details
+                value:
+                  productName: Mechanical Keyboard
+                  categoryId: 1
+                  supplierId: 1
+                  reorderLevel: 20
+                  unitPrice: 900.0
+                  status: In Stock
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+      - Products
+      summary: Deactivate product
+      description: Soft-deactivates a product while preserving transaction history.
+      operationId: deleteProduct
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Product identifier.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/products/export:
+    get:
+      tags:
+      - Products
+      summary: Export products
+      description: Exports filtered product records.
+      operationId: exportProducts
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - name: categoryId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by category.
+        example: 1
+      - *id006
+      - &id007
+        name: format
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - csv
+          - xlsx
+          - pdf
+          default: csv
+        description: Export file format. CSV is required; XLSX/PDF are optional depending on included libraries.
+        example: csv
+      responses:
+        '200':
+          description: Products export file.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/products/{productId}/stock-movements:
+    get:
+      tags:
+      - Stock Movements
+      summary: List stock movements for product
+      description: Returns stock movement history for a selected product.
+      operationId: listProductStockMovements
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: productId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Product identifier.
+        example: 1
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockMovementListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/categories:
+    get:
+      tags:
+      - Categories
+      summary: List categories
+      description: Returns category records with product counts.
+      operationId: listCategories
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Category type filter.
+        example: Product Group
+      - *id006
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Categories
+      summary: Create category
+      description: Creates a product category.
+      operationId: createCategory
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryCreateRequest'
+            examples:
+              accessories:
+                summary: Create category
+                value:
+                  categoryName: Accessories
+                  description: Computer and device accessories
+                  type: Product Group
+                  status: Active
+      responses:
+        '201':
+          description: Created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/categories/{categoryId}:
+    get:
+      tags:
+      - Categories
+      summary: View category details
+      description: Returns one category and product count.
+      operationId: getCategoryById
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: categoryId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Category identifier.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+      - Categories
+      summary: Update category
+      description: Updates category data.
+      operationId: updateCategory
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: categoryId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Category identifier.
+        example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpdateRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+      - Categories
+      summary: Deactivate category
+      description: Soft-deactivates a category. Categories with linked products should not be hard-deleted.
+      operationId: deleteCategory
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: categoryId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Category identifier.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/categories/export:
+    get:
+      tags:
+      - Categories
+      summary: Export categories
+      description: Exports filtered category records.
+      operationId: exportCategories
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Category type filter.
+        example: Product Group
+      - *id006
+      - *id007
+      responses:
+        '200':
+          description: Categories export file.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/suppliers:
+    get:
+      tags:
+      - Suppliers
+      summary: List suppliers
+      description: Returns supplier records with search, filters, sorting, and pagination.
+      operationId: listSuppliers
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Supplier type filter.
+        example: Local
+      - *id006
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Suppliers
+      summary: Create supplier
+      description: Creates a supplier record.
+      operationId: createSupplier
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierCreateRequest'
+            examples:
+              supplier:
+                summary: Create supplier
+                value:
+                  supplierName: Tech Solutions Inc.
+                  contactPerson: Robert Garcia
+                  phone: (02) 8123-1111
+                  email: robert.garcia@techsolutions.com
+                  address: Makati City, Metro Manila
+                  type: Local
+                  preferred: true
+                  status: Active
+      responses:
+        '201':
+          description: Created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/suppliers/{supplierId}:
+    get:
+      tags:
+      - Suppliers
+      summary: View supplier details
+      description: Returns one supplier including purchase count.
+      operationId: getSupplierById
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: supplierId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Supplier identifier.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+      - Suppliers
+      summary: Update supplier
+      description: Updates supplier data.
+      operationId: updateSupplier
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: supplierId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Supplier identifier.
+        example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierUpdateRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+      - Suppliers
+      summary: Deactivate supplier
+      description: Soft-deactivates a supplier while preserving purchase history.
+      operationId: deleteSupplier
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: supplierId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Supplier identifier.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/suppliers/export:
+    get:
+      tags:
+      - Suppliers
+      summary: Export suppliers
+      description: Exports filtered supplier records.
+      operationId: exportSuppliers
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - name: type
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Supplier type filter.
+        example: Local
+      - *id006
+      - *id007
+      responses:
+        '200':
+          description: Suppliers export file.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/purchases:
+    get:
+      tags:
+      - Purchases
+      summary: List purchase orders
+      description: Returns purchase orders with search, supplier/status/date filters, and pagination.
+      operationId: listPurchases
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - name: supplierId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by supplier.
+        example: 1
+      - *id006
+      - &id008
+        name: dateFrom
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: Start date filter.
+        example: '2024-05-01'
+      - &id009
+        name: dateTo
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date
+        description: End date filter.
+        example: '2024-05-21'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Purchases
+      summary: Create purchase order
+      description: Creates a pending purchase order. Stock is not increased until receiving.
+      operationId: createPurchase
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseCreateRequest'
+            examples:
+              purchase:
+                summary: Create purchase order
+                value:
+                  supplierId: 1
+                  orderDate: '2024-05-20'
+                  expectedDeliveryDate: '2024-05-27'
+                  notes: Urgent replenishment.
+                  items:
+                  - productId: 3
+                    quantity: 5
+                    unitCost: 6500.0
+      responses:
+        '201':
+          description: Created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/purchases/{purchaseId}:
+    get:
+      tags:
+      - Purchases
+      summary: View purchase order
+      description: Returns purchase order header and line items.
+      operationId: getPurchaseById
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: purchaseId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Purchase order identifier.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+      - Purchases
+      summary: Update pending purchase order
+      description: Updates a purchase order only when it is still pending.
+      operationId: updatePurchase
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: purchaseId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Purchase order identifier.
+        example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseUpdateRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/purchases/{purchaseId}/receive:
+    post:
+      tags:
+      - Purchases
+      summary: Receive purchase order
+      description: Receives a pending purchase order, increases product stock, and creates stock movements in one transaction.
+      operationId: receivePurchase
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: purchaseId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Purchase order identifier.
+        example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceivePurchaseRequest'
+      responses:
+        '200':
+          description: Purchase order received and stock updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/purchases/{purchaseId}/cancel:
+    post:
+      tags:
+      - Purchases
+      summary: Cancel purchase order
+      description: Cancels a pending purchase order. Received orders cannot be cancelled.
+      operationId: cancelPurchase
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: purchaseId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Purchase order identifier.
+        example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+      responses:
+        '200':
+          description: Purchase order cancelled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/purchases/export:
+    get:
+      tags:
+      - Purchases
+      summary: Export purchase orders
+      description: Exports filtered purchase order records.
+      operationId: exportPurchases
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - name: supplierId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by supplier.
+        example: 1
+      - *id006
+      - *id008
+      - *id009
+      - *id007
+      responses:
+        '200':
+          description: Purchase orders export file.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/sales:
+    get:
+      tags:
+      - Sales
+      summary: List sales
+      description: Returns sales invoices with search, status/payment/date filters, and pagination. Cashiers may be restricted
+        to own sales.
+      operationId: listSales
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - *id006
+      - name: paymentMethod
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filter by payment method.
+        example: Cash
+      - *id008
+      - *id009
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Sales
+      summary: Create sale
+      description: Creates a sale invoice, validates payment, decreases stock, and creates stock movement records in one transaction.
+      operationId: createSale
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleCreateRequest'
+            examples:
+              sale:
+                summary: Create paid cash sale
+                value:
+                  customerName: Juan Dela Cruz
+                  items:
+                  - productId: 1
+                    quantity: 2
+                  - productId: 2
+                    quantity: 1
+                  paymentMethod: Cash
+                  amountReceived: 2500.0
+                  status: Paid
+      responses:
+        '201':
+          description: Created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/sales/{saleId}:
+    get:
+      tags:
+      - Sales
+      summary: View sale
+      description: Returns sale invoice details and line items.
+      operationId: getSaleById
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: saleId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Sale identifier.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+      - Sales
+      summary: Update pending sale
+      description: Updates a pending sale before completion. Completed or cancelled sales cannot normally be edited.
+      operationId: updateSale
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: saleId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Sale identifier.
+        example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaleUpdateRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/sales/{saleId}/cancel:
+    post:
+      tags:
+      - Sales
+      summary: Cancel sale
+      description: Cancels a sale, restores stock if needed, and creates reversal stock movements.
+      operationId: cancelSale
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: saleId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Sale identifier.
+        example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelRequest'
+      responses:
+        '200':
+          description: Sale cancelled.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaleResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/sales/{saleId}/receipt:
+    get:
+      tags:
+      - Sales
+      summary: Get receipt data
+      description: Returns receipt-ready sale data for printing/display.
+      operationId: getSaleReceipt
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: saleId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Sale identifier.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/sales/export:
+    get:
+      tags:
+      - Sales
+      summary: Export sales
+      description: Exports filtered sales records. Cashier export may be restricted to own sales.
+      operationId: exportSales
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - *id006
+      - name: paymentMethod
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filter by payment method.
+        example: Cash
+      - *id008
+      - *id009
+      - *id007
+      responses:
+        '200':
+          description: Sales export file.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/inventory-change-requests:
+    get:
+      tags:
+      - Inventory Change Requests
+      summary: List inventory change requests
+      description: Lists stock correction requests. Clerks see their own requests; Managers/Admins see all requests.
+      operationId: listInventoryChangeRequests
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - *id006
+      - name: productId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by product.
+        example: 4
+      - name: requesterId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by requester. Manager/Admin only.
+        example: 3
+      - *id008
+      - *id009
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryChangeRequestListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Inventory Change Requests
+      summary: Submit inventory change request
+      description: Inventory Clerk submits a stock adjustment/correction request. Product stock is not changed until Manager
+        approval. Supports optional proof image upload.
+      operationId: createInventoryChangeRequest
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+              - productId
+              - requestType
+              - reason
+              properties:
+                productId:
+                  type: integer
+                  format: int64
+                  example: 4
+                requestType:
+                  type: string
+                  enum:
+                  - Adjustment
+                  - Correction
+                  - Damage
+                  - Lost Item
+                  - Found Item
+                  example: Adjustment
+                requestedQuantity:
+                  type: integer
+                  nullable: true
+                  example: 4
+                quantityChange:
+                  type: integer
+                  nullable: true
+                  example: -1
+                reason:
+                  type: string
+                  example: Overcounted during cycle count.
+                proofImage:
+                  type: string
+                  format: binary
+                  description: Optional image of counted inventory as proof.
+      responses:
+        '201':
+          description: Created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryChangeRequestResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/inventory-change-requests/my-summary:
+    get:
+      tags:
+      - Inventory Change Requests
+      summary: Get my request summary
+      description: Returns Pending, Approved, and Rejected counts for the current Inventory Clerk.
+      operationId: getMyInventoryChangeRequestSummary
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryChangeSummaryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/inventory-change-requests/{requestId}:
+    get:
+      tags:
+      - Inventory Change Requests
+      summary: View inventory change request
+      description: Returns full request details including proof image metadata and review status.
+      operationId: getInventoryChangeRequestById
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: requestId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Inventory change request identifier.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryChangeRequestResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/inventory-change-requests/{requestId}/proof:
+    get:
+      tags:
+      - Inventory Change Requests
+      summary: Download proof image
+      description: Streams the uploaded proof image for a request. Access is restricted to owner clerk, manager, or administrator.
+      operationId: downloadInventoryChangeProof
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: requestId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Inventory change request identifier.
+        example: 1
+      responses:
+        '200':
+          description: Proof image file.
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/inventory-change-requests/{requestId}/approve:
+    post:
+      tags:
+      - Inventory Change Requests
+      summary: Approve inventory change request
+      description: Approves a pending request, applies the stock change, and creates a stock movement in one transaction.
+      operationId: approveInventoryChangeRequest
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: requestId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Inventory change request identifier.
+        example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRequest'
+      responses:
+        '200':
+          description: Request approved and stock updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryChangeRequestResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/inventory-change-requests/{requestId}/reject:
+    post:
+      tags:
+      - Inventory Change Requests
+      summary: Reject inventory change request
+      description: Rejects a pending request. Stock remains unchanged.
+      operationId: rejectInventoryChangeRequest
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: requestId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: Inventory change request identifier.
+        example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectRequest'
+      responses:
+        '200':
+          description: Request rejected.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryChangeRequestResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/stock-movements:
+    get:
+      tags:
+      - Stock Movements
+      summary: List stock movements
+      description: Returns stock movement audit trail with filters.
+      operationId: listStockMovements
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - name: productId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by product.
+        example: 1
+      - name: movementType
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filter by movement type.
+        example: SALE_OUT
+      - name: referenceType
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filter by reference type.
+        example: SALE
+      - *id008
+      - *id009
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockMovementListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/reports/options:
+    get:
+      tags:
+      - Reports
+      summary: Get report options
+      description: Returns report types, group-by values, comparison choices, and category filter options.
+      operationId: getReportOptions
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportOptionsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/reports/sales-summary:
+    get:
+      tags:
+      - Reports
+      summary: Generate sales summary report
+      description: Returns total sales, trend data, best day, total orders, and top products for a date range.
+      operationId: getSalesSummaryReport
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id008
+      - *id009
+      - name: categoryId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by category.
+        example: 1
+      - name: groupBy
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - Day
+          - Week
+          - Month
+        description: Group trend by.
+        example: Day
+      - name: compareWith
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Comparison option.
+        example: No Comparison
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesSummaryReportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/reports/inventory-value:
+    get:
+      tags:
+      - Reports
+      summary: Generate inventory value report
+      description: Returns current inventory value by product and category.
+      operationId: getInventoryValueReport
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: categoryId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by category.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryValueReportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/reports/purchase-cost:
+    get:
+      tags:
+      - Reports
+      summary: Generate purchase cost report
+      description: Returns purchase cost totals and trend data for a date range.
+      operationId: getPurchaseCostReport
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id008
+      - *id009
+      - name: supplierId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by supplier.
+        example: 1
+      - name: categoryId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by category.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseCostReportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/reports/low-stock:
+    get:
+      tags:
+      - Reports
+      summary: Generate low stock report
+      description: Returns products whose quantity is less than or equal to reorder level.
+      operationId: getLowStockReport
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: categoryId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by category.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LowStockReportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/reports/top-selling-products:
+    get:
+      tags:
+      - Reports
+      summary: Generate top-selling products report
+      description: Returns ranked products by quantity sold and sales amount.
+      operationId: getTopSellingProductsReport
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id008
+      - *id009
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 10
+          minimum: 1
+          maximum: 100
+        description: Number of products to return.
+        example: 10
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TopSellingReportResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/reports/export:
+    get:
+      tags:
+      - Reports
+      summary: Export report
+      description: Exports the selected report using the supplied report criteria.
+      operationId: exportReport
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: reportType
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - sales-summary
+          - inventory-value
+          - purchase-cost
+          - low-stock
+          - top-selling-products
+        description: Report type to export.
+        example: sales-summary
+      - *id008
+      - *id009
+      - name: categoryId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by category.
+        example: 1
+      - *id007
+      responses:
+        '200':
+          description: Report export file.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/users:
+    get:
+      tags:
+      - Users
+      summary: List users
+      description: Administrator-only endpoint for listing user accounts.
+      operationId: listUsers
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - name: role
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filter by role.
+        example: Administrator
+      - *id006
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      tags:
+      - Users
+      summary: Create user
+      description: Creates a new user account. Password is hashed by the server.
+      operationId: createUser
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+            examples:
+              adminUser:
+                summary: Create admin user
+                value:
+                  fullName: Maria Cristina Santos
+                  username: msantos
+                  email: maria.santos@ims.com
+                  role: Manager
+                  password: Password@123
+                  status: Active
+      responses:
+        '201':
+          description: Created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/users/{userId}:
+    get:
+      tags:
+      - Users
+      summary: View user
+      description: Returns one user account without password hash.
+      operationId: getUserById
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: User identifier.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    put:
+      tags:
+      - Users
+      summary: Update user
+      description: Updates user profile, role, and status. Does not update password.
+      operationId: updateUser
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: User identifier.
+        example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags:
+      - Users
+      summary: Deactivate user
+      description: Deactivates a user account and invalidates active sessions.
+      operationId: deleteUser
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: User identifier.
+        example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/users/{userId}/reset-password:
+    post:
+      tags:
+      - Users
+      summary: Reset user password
+      description: Administrator resets a user's password.
+      operationId: resetUserPassword
+      security:
+      - bearerAuth: []
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+        description: User identifier.
+        example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/users/export:
+    get:
+      tags:
+      - Users
+      summary: Export users
+      description: Exports filtered user accounts. Password hashes are never exported.
+      operationId: exportUsers
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - name: role
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filter by role.
+        example: Administrator
+      - *id006
+      - *id007
+      responses:
+        '200':
+          description: Users export file.
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/settings:
+    get:
+      tags:
+      - Settings
+      summary: Get system settings
+      description: Returns all settings sections for the Administrator Settings page.
+      operationId: getSettings
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettingsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/settings/company:
+    put:
+      tags:
+      - Settings
+      summary: Update company information settings
+      description: Updates company name, address, contact, email, website, and fiscal year start.
+      operationId: updateCompanySettings
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanySettings'
+      responses:
+        '200':
+          description: Settings updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettingsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/settings/inventory:
+    put:
+      tags:
+      - Settings
+      summary: Update inventory settings
+      description: Updates stock rules, thresholds, costing method, delete confirmation, and expiry settings.
+      operationId: updateInventorySettings
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventorySettings'
+      responses:
+        '200':
+          description: Settings updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettingsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/settings/currency-tax:
+    put:
+      tags:
+      - Settings
+      summary: Update currency and tax settings
+      description: Updates currency, symbol, tax rate/type, and rounding.
+      operationId: updateCurrencyTaxSettings
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CurrencyTaxSettings'
+      responses:
+        '200':
+          description: Settings updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettingsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/settings/security:
+    put:
+      tags:
+      - Settings
+      summary: Update security settings
+      description: Updates session timeout, password policy, login behavior, account lock, and password expiry settings.
+      operationId: updateSecuritySettings
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SecuritySettings'
+      responses:
+        '200':
+          description: Settings updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettingsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/settings/notifications:
+    put:
+      tags:
+      - Settings
+      summary: Update notification settings
+      description: Updates SMTP/email notification and alert settings.
+      operationId: updateNotificationsSettings
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationSettings'
+      responses:
+        '200':
+          description: Settings updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemSettingsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/settings/database/test:
+    get:
+      tags:
+      - Settings
+      summary: Test database connection
+      description: Tests the configured database connection and returns response time.
+      operationId: testDatabaseConnection
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseTestResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/settings/database/backup:
+    post:
+      tags:
+      - Settings
+      summary: Create database backup
+      description: Creates a timestamped backup of the database.
+      operationId: backupDatabase
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          description: Backup created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BackupResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/settings/database/restore:
+    post:
+      tags:
+      - Settings
+      summary: Restore database backup
+      description: Restores the database from a backup file. The server should create a pre-restore backup first.
+      operationId: restoreDatabase
+      security:
+      - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreRequest'
+      responses:
+        '200':
+          description: Database restored successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/audit-logs:
+    get:
+      tags:
+      - Audit Logs
+      summary: List audit logs
+      description: Administrator-only endpoint for reviewing user and system actions.
+      operationId: listAuditLogs
+      security:
+      - bearerAuth: []
+      parameters:
+      - *id001
+      - *id002
+      - *id003
+      - *id004
+      - *id005
+      - name: userId
+        in: query
+        required: false
+        schema:
+          type: integer
+          format: int64
+        description: Filter by user.
+        example: 1
+      - name: action
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filter by action.
+        example: UPDATE_SETTINGS
+      - name: module
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filter by module.
+        example: Settings
+      - *id008
+      - *id009
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT or opaque session token
+      description: Use the token returned from POST /api/auth/login.
+  responses:
+    BadRequest:
+      description: Invalid request or validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            validation:
+              summary: Validation error
+              value:
+                success: false
+                message: Validation failed.
+                errors:
+                - field: username
+                  message: Username is required.
+    Unauthorized:
+      description: Authentication is required or the token is invalid/expired.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            unauthorized:
+              summary: Missing or invalid token
+              value:
+                success: false
+                message: Unauthorized.
+                errors:
+                - field: Authorization
+                  message: Bearer token is missing or invalid.
+    Forbidden:
+      description: The authenticated user does not have permission to perform this action.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            forbidden:
+              summary: Forbidden
+              value:
+                success: false
+                message: Forbidden.
+                errors:
+                - field: role
+                  message: Your role is not allowed to access this resource.
+    NotFound:
+      description: The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            notFound:
+              summary: Not found
+              value:
+                success: false
+                message: Resource not found.
+                errors:
+                - field: id
+                  message: No record exists for the supplied identifier.
+    Conflict:
+      description: Conflict with current resource state or duplicate record.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            conflict:
+              summary: Conflict
+              value:
+                success: false
+                message: Conflict.
+                errors:
+                - field: productCode
+                  message: Product code already exists.
+    InternalServerError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            serverError:
+              summary: Server error
+              value:
+                success: false
+                message: An unexpected server error occurred.
+                errors: []
+  schemas:
+    ApiError:
+      type: object
+      required:
+      - field
+      - message
+      properties:
+        field:
+          type: string
+          nullable: true
+          example: username
+        message:
+          type: string
+          example: Username is required.
+    ErrorResponse:
+      type: object
+      required:
+      - success
+      - message
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: Validation failed.
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ApiError'
+    PaginationMeta:
+      type: object
+      required:
+      - page
+      - size
+      - totalRecords
+      - totalPages
+      properties:
+        page:
+          type: integer
+          example: 1
+        size:
+          type: integer
+          example: 10
+        totalRecords:
+          type: integer
+          example: 245
+        totalPages:
+          type: integer
+          example: 25
+        sortBy:
+          type: string
+          example: productName
+        sortDir:
+          type: string
+          example: asc
+    MessageData:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          nullable: true
+          example: 1
+        referenceNo:
+          type: string
+          nullable: true
+          example: INV-2024-0128
+    MessageResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/MessageData'
+    FileExportResponse:
+      type: string
+      format: binary
+      description: Downloadable file stream.
+    HealthData:
+      type: object
+      required:
+      - status
+      - apiVersion
+      - serverTime
+      - databaseStatus
+      properties:
+        status:
+          type: string
+          example: UP
+        apiVersion:
+          type: string
+          example: 1.0.0
+        serverTime:
+          type: string
+          format: date-time
+          example: '2024-05-21T10:30:15Z'
+        databaseStatus:
+          type: string
+          example: CONNECTED
+        responseTimeMs:
+          type: integer
+          example: 42
+    HealthResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/HealthData'
+    WelcomeData:
+      type: object
+      properties:
+        systemName:
+          type: string
+          example: Inventory Management System
+        headline:
+          type: string
+          example: Welcome to the Inventory Management System
+        description:
+          type: string
+          example: Browse general system information, contact support, test server connection, or proceed to login.
+        guestCapabilities:
+          type: array
+          items:
+            type: string
+          example:
+          - View general system information
+          - Contact support
+          - Test server connection
+          - Proceed to login
+        actions:
+          type: array
+          items:
+            type: string
+          example:
+          - Test Server Connection
+          - About System
+          - Proceed to Login
+    WelcomeResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/WelcomeData'
+    AboutData:
+      type: object
+      properties:
+        overview:
+          type: string
+          example: A Java Swing desktop inventory system with a Java SE backend API.
+        purpose:
+          type: string
+          example: Help businesses manage products, categories, suppliers, purchases, sales, reports, users, and settings.
+        coreModules:
+          type: array
+          items:
+            type: string
+          example:
+          - Products
+          - Categories
+          - Suppliers
+          - Purchases
+          - Sales
+          - Reports
+          - Users
+          - Settings
+        benefits:
+          type: array
+          items:
+            type: string
+          example:
+          - Improve data accuracy
+          - Reduce manual errors
+          - Support better decision-making
+        guestLimitations:
+          type: string
+          example: Guests can only view public information and test server connectivity.
+    AboutResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/AboutData'
+    ContactData:
+      type: object
+      properties:
+        supportEmail:
+          type: string
+          format: email
+          example: support@inventoryms.com
+        hotline:
+          type: string
+          example: +1 (555) 123-4567
+        mobileNumber:
+          type: string
+          example: +1 (555) 987-6543
+        officeAddress:
+          type: string
+          example: 456 Business Park Drive, Suite 200, Austin, TX 78701, USA
+        officeHours:
+          type: string
+          example: 'Mon - Fri: 9:00 AM - 5:00 PM'
+        website:
+          type: string
+          example: www.inventoryms.com
+    ContactResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/ContactData'
+    InquiryRequest:
+      type: object
+      required:
+      - name
+      - email
+      - subject
+      - message
+      properties:
+        name:
+          type: string
+          example: Juan Dela Cruz
+        email:
+          type: string
+          format: email
+          example: juan@example.com
+        subject:
+          type: string
+          example: Request for system access
+        message:
+          type: string
+          example: I would like to request assistance with my account.
+    InquiryData:
+      type: object
+      properties:
+        inquiryId:
+          type: integer
+          format: int64
+          example: 12
+        submittedAt:
+          type: string
+          format: date-time
+          example: '2024-05-21T10:30:15Z'
+    InquiryResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/InquiryData'
+    Role:
+      type: string
+      enum:
+      - Administrator
+      - Manager
+      - Inventory Clerk
+      - Cashier
+      example: Administrator
+    UserStatus:
+      type: string
+      enum:
+      - Active
+      - Inactive
+      - Locked
+      example: Active
+    LoginRequest:
+      type: object
+      required:
+      - username
+      - password
+      - role
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          format: password
+          example: Admin@123
+        role:
+          $ref: '#/components/schemas/Role'
+    UserProfile:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          example: 1
+        fullName:
+          type: string
+          example: John Michael Dela Cruz
+        username:
+          type: string
+          example: jdelacruz
+        email:
+          type: string
+          format: email
+          example: john.delacruz@ims.com
+        role:
+          $ref: '#/components/schemas/Role'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        lastLogin:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2024-05-21T09:45:00Z'
+        permissions:
+          type: array
+          items:
+            type: string
+          example:
+          - PRODUCT_READ
+          - PRODUCT_WRITE
+          - USER_MANAGE
+          - SETTINGS_MANAGE
+    LoginData:
+      type: object
+      properties:
+        token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiJ9.demo-token
+        tokenType:
+          type: string
+          example: Bearer
+        expiresInSeconds:
+          type: integer
+          example: 1800
+        user:
+          $ref: '#/components/schemas/UserProfile'
+    LoginResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/LoginData'
+    CurrentUserResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/UserProfile'
+    User:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          example: 1
+        userCode:
+          type: string
+          example: U001
+        fullName:
+          type: string
+          example: John Michael Dela Cruz
+        username:
+          type: string
+          example: jdelacruz
+        role:
+          $ref: '#/components/schemas/Role'
+        email:
+          type: string
+          format: email
+          example: john.delacruz@ims.com
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        lastLogin:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2024-05-21T09:45:00Z'
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-05-01T08:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2024-05-21T10:00:00Z'
+    UserCreateRequest:
+      type: object
+      required:
+      - fullName
+      - username
+      - email
+      - role
+      - password
+      properties:
+        fullName:
+          type: string
+          example: Maria Cristina Santos
+        username:
+          type: string
+          example: msantos
+        email:
+          type: string
+          format: email
+          example: maria.santos@ims.com
+        role:
+          $ref: '#/components/schemas/Role'
+        password:
+          type: string
+          format: password
+          example: Password@123
+        status:
+          $ref: '#/components/schemas/UserStatus'
+    UserUpdateRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          example: Maria Cristina Santos
+        email:
+          type: string
+          format: email
+          example: maria.santos@ims.com
+        role:
+          $ref: '#/components/schemas/Role'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+    ResetPasswordRequest:
+      type: object
+      required:
+      - newPassword
+      properties:
+        newPassword:
+          type: string
+          format: password
+          example: NewPassword@123
+        forceChangeOnNextLogin:
+          type: boolean
+          example: true
+    UserResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/User'
+    UserListResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      - meta
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Records retrieved successfully.
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    RecordStatus:
+      type: string
+      enum:
+      - Active
+      - Inactive
+      - In Stock
+      - Low Stock
+      - Out of Stock
+      - Pending
+      - Received
+      - Delivered
+      - Cancelled
+      - Approved
+      - Rejected
+      example: Active
+    Category:
+      type: object
+      properties:
+        categoryId:
+          type: integer
+          format: int64
+          example: 1
+        categoryCode:
+          type: string
+          example: CAT001
+        categoryName:
+          type: string
+          example: Accessories
+        description:
+          type: string
+          example: Computer and device accessories
+        type:
+          type: string
+          example: Product Group
+        productCount:
+          type: integer
+          example: 45
+        status:
+          type: string
+          enum:
+          - Active
+          - Inactive
+          example: Active
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-05-01T08:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2024-05-21T10:00:00Z'
+    CategoryCreateRequest:
+      type: object
+      required:
+      - categoryName
+      properties:
+        categoryName:
+          type: string
+          example: Accessories
+        description:
+          type: string
+          example: Computer and device accessories
+        type:
+          type: string
+          example: Product Group
+        status:
+          type: string
+          enum:
+          - Active
+          - Inactive
+          example: Active
+    CategoryUpdateRequest:
+      type: object
+      required:
+      - categoryName
+      properties:
+        categoryName:
+          type: string
+          example: Accessories
+        description:
+          type: string
+          example: Computer and device accessories
+        type:
+          type: string
+          example: Product Group
+        status:
+          type: string
+          enum:
+          - Active
+          - Inactive
+          example: Active
+    CategoryResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/Category'
+    CategoryListResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      - meta
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Records retrieved successfully.
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    Supplier:
+      type: object
+      properties:
+        supplierId:
+          type: integer
+          format: int64
+          example: 1
+        supplierCode:
+          type: string
+          example: SUP001
+        supplierName:
+          type: string
+          example: Tech Solutions Inc.
+        contactPerson:
+          type: string
+          example: Robert Garcia
+        phone:
+          type: string
+          example: (02) 8123-1111
+        email:
+          type: string
+          format: email
+          example: robert.garcia@techsolutions.com
+        address:
+          type: string
+          example: Makati City, Metro Manila
+        type:
+          type: string
+          example: Local
+        preferred:
+          type: boolean
+          example: true
+        status:
+          type: string
+          enum:
+          - Active
+          - Inactive
+          example: Active
+        purchaseCount:
+          type: integer
+          example: 12
+    SupplierCreateRequest:
+      type: object
+      required:
+      - supplierName
+      properties:
+        supplierName:
+          type: string
+          example: Tech Solutions Inc.
+        contactPerson:
+          type: string
+          example: Robert Garcia
+        phone:
+          type: string
+          example: (02) 8123-1111
+        email:
+          type: string
+          format: email
+          example: robert.garcia@techsolutions.com
+        address:
+          type: string
+          example: Makati City, Metro Manila
+        type:
+          type: string
+          example: Local
+        preferred:
+          type: boolean
+          example: true
+        status:
+          type: string
+          enum:
+          - Active
+          - Inactive
+          example: Active
+    SupplierUpdateRequest:
+      type: object
+      required:
+      - supplierName
+      properties:
+        supplierName:
+          type: string
+          example: Tech Solutions Inc.
+        contactPerson:
+          type: string
+          example: Robert Garcia
+        phone:
+          type: string
+          example: (02) 8123-1111
+        email:
+          type: string
+          format: email
+          example: robert.garcia@techsolutions.com
+        address:
+          type: string
+          example: Makati City, Metro Manila
+        type:
+          type: string
+          example: Local
+        preferred:
+          type: boolean
+          example: true
+        status:
+          type: string
+          enum:
+          - Active
+          - Inactive
+          example: Active
+    SupplierResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/Supplier'
+    SupplierListResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      - meta
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Records retrieved successfully.
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Supplier'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    Product:
+      type: object
+      properties:
+        productId:
+          type: integer
+          format: int64
+          example: 1
+        productCode:
+          type: string
+          example: P001
+        productName:
+          type: string
+          example: Keyboard
+        categoryId:
+          type: integer
+          format: int64
+          example: 1
+        categoryName:
+          type: string
+          example: Accessories
+        supplierId:
+          type: integer
+          format: int64
+          nullable: true
+          example: 1
+        supplierName:
+          type: string
+          nullable: true
+          example: Tech Solutions Inc.
+        quantity:
+          type: integer
+          example: 45
+        reorderLevel:
+          type: integer
+          example: 20
+        unitPrice:
+          type: number
+          format: double
+          example: 850.0
+        totalValue:
+          type: number
+          format: double
+          example: 38250.0
+        status:
+          type: string
+          enum:
+          - In Stock
+          - Low Stock
+          - Out of Stock
+          - Inactive
+          example: In Stock
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-05-01T08:00:00Z'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2024-05-21T10:00:00Z'
+    ProductCreateRequest:
+      type: object
+      required:
+      - productCode
+      - productName
+      - categoryId
+      - quantity
+      - unitPrice
+      properties:
+        productCode:
+          type: string
+          example: P001
+        productName:
+          type: string
+          example: Keyboard
+        categoryId:
+          type: integer
+          format: int64
+          example: 1
+        supplierId:
+          type: integer
+          format: int64
+          nullable: true
+          example: 1
+        quantity:
+          type: integer
+          example: 45
+        reorderLevel:
+          type: integer
+          example: 20
+        unitPrice:
+          type: number
+          format: double
+          example: 850.0
+        status:
+          type: string
+          enum:
+          - In Stock
+          - Low Stock
+          - Out of Stock
+          - Inactive
+          example: In Stock
+    ProductUpdateRequest:
+      type: object
+      description: Quantity updates are restricted. Inventory Clerk quantity changes must use inventory change requests.
+      properties:
+        productName:
+          type: string
+          example: Mechanical Keyboard
+        categoryId:
+          type: integer
+          format: int64
+          example: 1
+        supplierId:
+          type: integer
+          format: int64
+          nullable: true
+          example: 1
+        reorderLevel:
+          type: integer
+          example: 20
+        unitPrice:
+          type: number
+          format: double
+          example: 900.0
+        status:
+          type: string
+          enum:
+          - In Stock
+          - Low Stock
+          - Out of Stock
+          - Inactive
+          example: In Stock
+    ProductResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/Product'
+    ProductListResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      - meta
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Records retrieved successfully.
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    PurchaseOrderItem:
+      type: object
+      properties:
+        productId:
+          type: integer
+          format: int64
+          example: 3
+        productCode:
+          type: string
+          example: P003
+        productName:
+          type: string
+          example: Monitor
+        quantity:
+          type: integer
+          example: 5
+        unitCost:
+          type: number
+          format: double
+          example: 6500.0
+        lineTotal:
+          type: number
+          format: double
+          example: 32500.0
+    PurchaseOrder:
+      type: object
+      properties:
+        purchaseId:
+          type: integer
+          format: int64
+          example: 126
+        poNumber:
+          type: string
+          example: PO-2024-00126
+        supplierId:
+          type: integer
+          format: int64
+          example: 1
+        supplierName:
+          type: string
+          example: Tech Solutions Inc.
+        orderDate:
+          type: string
+          format: date
+          example: '2024-05-20'
+        expectedDeliveryDate:
+          type: string
+          format: date
+          example: '2024-05-27'
+        itemCount:
+          type: integer
+          example: 5
+        totalAmount:
+          type: number
+          format: double
+          example: 28750.0
+        status:
+          type: string
+          enum:
+          - Pending
+          - Delivered
+          - Received
+          - Cancelled
+          example: Pending
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrderItem'
+    PurchaseOrderItemRequest:
+      type: object
+      required:
+      - productId
+      - quantity
+      - unitCost
+      properties:
+        productId:
+          type: integer
+          format: int64
+          example: 3
+        quantity:
+          type: integer
+          minimum: 1
+          example: 5
+        unitCost:
+          type: number
+          format: double
+          minimum: 0
+          example: 6500.0
+    PurchaseCreateRequest:
+      type: object
+      required:
+      - supplierId
+      - orderDate
+      - expectedDeliveryDate
+      - items
+      properties:
+        supplierId:
+          type: integer
+          format: int64
+          example: 1
+        orderDate:
+          type: string
+          format: date
+          example: '2024-05-20'
+        expectedDeliveryDate:
+          type: string
+          format: date
+          example: '2024-05-27'
+        notes:
+          type: string
+          example: Urgent replenishment for monitors.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrderItemRequest'
+    PurchaseUpdateRequest:
+      type: object
+      required:
+      - supplierId
+      - orderDate
+      - expectedDeliveryDate
+      - items
+      properties:
+        supplierId:
+          type: integer
+          format: int64
+          example: 1
+        orderDate:
+          type: string
+          format: date
+          example: '2024-05-20'
+        expectedDeliveryDate:
+          type: string
+          format: date
+          example: '2024-05-27'
+        notes:
+          type: string
+          example: Urgent replenishment for monitors.
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrderItemRequest'
+    ReceivePurchaseRequest:
+      type: object
+      properties:
+        receivedDate:
+          type: string
+          format: date
+          example: '2024-05-21'
+        remarks:
+          type: string
+          example: Items received in good condition.
+    CancelRequest:
+      type: object
+      required:
+      - reason
+      properties:
+        reason:
+          type: string
+          example: Duplicate order created by mistake.
+    PurchaseOrderResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/PurchaseOrder'
+    PurchaseOrderListResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      - meta
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Records retrieved successfully.
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrder'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    SaleItem:
+      type: object
+      properties:
+        productId:
+          type: integer
+          format: int64
+          example: 1
+        productCode:
+          type: string
+          example: P001
+        productName:
+          type: string
+          example: Keyboard
+        quantity:
+          type: integer
+          example: 2
+        unitPrice:
+          type: number
+          format: double
+          example: 850.0
+        lineTotal:
+          type: number
+          format: double
+          example: 1700.0
+    Sale:
+      type: object
+      properties:
+        saleId:
+          type: integer
+          format: int64
+          example: 128
+        invoiceNo:
+          type: string
+          example: INV-2024-0128
+        customerName:
+          type: string
+          example: Juan Dela Cruz
+        cashierId:
+          type: integer
+          format: int64
+          example: 6
+        cashierName:
+          type: string
+          example: Jessica Marie Lim
+        saleDate:
+          type: string
+          format: date-time
+          example: '2024-05-21T10:15:00Z'
+        itemCount:
+          type: integer
+          example: 3
+        subtotal:
+          type: number
+          format: double
+          example: 2450.0
+        taxAmount:
+          type: number
+          format: double
+          example: 0.0
+        totalAmount:
+          type: number
+          format: double
+          example: 2450.0
+        paymentMethod:
+          type: string
+          enum:
+          - Cash
+          - GCash
+          - Credit Card
+          - Bank Transfer
+          - E-Wallet
+          example: Cash
+        amountReceived:
+          type: number
+          format: double
+          example: 2500.0
+        changeAmount:
+          type: number
+          format: double
+          example: 50.0
+        status:
+          type: string
+          enum:
+          - Paid
+          - Pending
+          - Cancelled
+          example: Paid
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleItem'
+    SaleItemRequest:
+      type: object
+      required:
+      - productId
+      - quantity
+      properties:
+        productId:
+          type: integer
+          format: int64
+          example: 1
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+    SaleCreateRequest:
+      type: object
+      required:
+      - customerName
+      - items
+      - paymentMethod
+      properties:
+        customerName:
+          type: string
+          example: Juan Dela Cruz
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleItemRequest'
+        paymentMethod:
+          type: string
+          enum:
+          - Cash
+          - GCash
+          - Credit Card
+          - Bank Transfer
+          - E-Wallet
+          example: Cash
+        amountReceived:
+          type: number
+          format: double
+          example: 2500.0
+        status:
+          type: string
+          enum:
+          - Paid
+          - Pending
+          example: Paid
+    SaleUpdateRequest:
+      type: object
+      required:
+      - customerName
+      - items
+      - paymentMethod
+      properties:
+        customerName:
+          type: string
+          example: Juan Dela Cruz
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleItemRequest'
+        paymentMethod:
+          type: string
+          enum:
+          - Cash
+          - GCash
+          - Credit Card
+          - Bank Transfer
+          - E-Wallet
+          example: Cash
+        amountReceived:
+          type: number
+          format: double
+          example: 2500.0
+        status:
+          type: string
+          enum:
+          - Paid
+          - Pending
+          example: Paid
+    ReceiptData:
+      type: object
+      properties:
+        invoiceNo:
+          type: string
+          example: INV-2024-0128
+        saleDate:
+          type: string
+          format: date-time
+          example: '2024-05-21T10:15:00Z'
+        customerName:
+          type: string
+          example: Juan Dela Cruz
+        cashierName:
+          type: string
+          example: Jessica Marie Lim
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SaleItem'
+        totalAmount:
+          type: number
+          format: double
+          example: 2450.0
+        paymentMethod:
+          type: string
+          example: Cash
+        amountReceived:
+          type: number
+          format: double
+          example: 2500.0
+        changeAmount:
+          type: number
+          format: double
+          example: 50.0
+    SaleResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/Sale'
+    SaleListResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      - meta
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Records retrieved successfully.
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sale'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    ReceiptResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/ReceiptData'
+    StockMovement:
+      type: object
+      properties:
+        movementId:
+          type: integer
+          format: int64
+          example: 1001
+        productId:
+          type: integer
+          format: int64
+          example: 1
+        productCode:
+          type: string
+          example: P001
+        productName:
+          type: string
+          example: Keyboard
+        movementType:
+          type: string
+          enum:
+          - OPENING
+          - PURCHASE_IN
+          - SALE_OUT
+          - ADJUSTMENT_IN
+          - ADJUSTMENT_OUT
+          - SALE_REVERSAL
+          example: SALE_OUT
+        referenceType:
+          type: string
+          example: SALE
+        referenceNo:
+          type: string
+          example: INV-2024-0128
+        quantityBefore:
+          type: integer
+          example: 47
+        quantityChange:
+          type: integer
+          example: -2
+        quantityAfter:
+          type: integer
+          example: 45
+        createdBy:
+          type: string
+          example: jlim
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-05-21T10:15:00Z'
+    StockMovementListResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      - meta
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Records retrieved successfully.
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockMovement'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    ProofFile:
+      type: object
+      properties:
+        fileId:
+          type: integer
+          format: int64
+          example: 501
+        originalFilename:
+          type: string
+          example: counted-inventory.jpg
+        mimeType:
+          type: string
+          example: image/jpeg
+        sizeBytes:
+          type: integer
+          example: 345120
+        downloadUrl:
+          type: string
+          example: /api/inventory-change-requests/10/proof
+    InventoryChangeRequest:
+      type: object
+      properties:
+        requestId:
+          type: integer
+          format: int64
+          example: 10
+        requestNo:
+          type: string
+          example: ICR-0004
+        productId:
+          type: integer
+          format: int64
+          example: 4
+        productCode:
+          type: string
+          example: P004
+        productName:
+          type: string
+          example: Printer Ink
+        requestType:
+          type: string
+          enum:
+          - Adjustment
+          - Correction
+          - Damage
+          - Lost Item
+          - Found Item
+          example: Adjustment
+        currentQuantity:
+          type: integer
+          example: 5
+        requestedQuantity:
+          type: integer
+          nullable: true
+          example: 4
+        quantityChange:
+          type: integer
+          example: -1
+        reason:
+          type: string
+          example: Overcounted during cycle count.
+        status:
+          type: string
+          enum:
+          - Pending
+          - Approved
+          - Rejected
+          example: Pending
+        requestedBy:
+          type: string
+          example: Inventory Clerk
+        requestedAt:
+          type: string
+          format: date-time
+          example: '2024-05-16T10:30:00Z'
+        reviewedBy:
+          type: string
+          nullable: true
+          example: Manager
+        reviewedAt:
+          type: string
+          format: date-time
+          nullable: true
+          example: '2024-05-16T11:00:00Z'
+        reviewNotes:
+          type: string
+          nullable: true
+          example: Approved after checking proof image.
+        proofFile:
+          $ref: '#/components/schemas/ProofFile'
+    InventoryChangeCreateRequest:
+      type: object
+      required:
+      - productId
+      - requestType
+      - reason
+      properties:
+        productId:
+          type: integer
+          format: int64
+          example: 4
+        requestType:
+          type: string
+          enum:
+          - Adjustment
+          - Correction
+          - Damage
+          - Lost Item
+          - Found Item
+          example: Adjustment
+        requestedQuantity:
+          type: integer
+          nullable: true
+          example: 4
+        quantityChange:
+          type: integer
+          nullable: true
+          example: -1
+        reason:
+          type: string
+          example: Overcounted during cycle count.
+    ReviewRequest:
+      type: object
+      properties:
+        notes:
+          type: string
+          example: Approved after validating uploaded proof image.
+    RejectRequest:
+      type: object
+      required:
+      - reason
+      properties:
+        reason:
+          type: string
+          example: Proof image is unclear. Please recount and resubmit.
+    InventoryChangeSummary:
+      type: object
+      properties:
+        pending:
+          type: integer
+          example: 3
+        approved:
+          type: integer
+          example: 5
+        rejected:
+          type: integer
+          example: 1
+    InventoryChangeRequestResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/InventoryChangeRequest'
+    InventoryChangeRequestListResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      - meta
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Records retrieved successfully.
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryChangeRequest'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+    InventoryChangeSummaryResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/InventoryChangeSummary'
+    MetricCard:
+      type: object
+      properties:
+        label:
+          type: string
+          example: Total Products
+        value:
+          type: string
+          example: '245'
+        description:
+          type: string
+          example: All items in inventory
+        severity:
+          type: string
+          nullable: true
+          example: normal
+    AdminDashboardData:
+      type: object
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricCard'
+        recentActivity:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+        systemStatus:
+          type: string
+          example: Healthy
+    ManagerDashboardData:
+      type: object
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricCard'
+        pendingApprovals:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryChangeRequest'
+        recentTransactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockMovement'
+        topSellingItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopSellingProduct'
+    ClerkDashboardData:
+      type: object
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricCard'
+        requestSummary:
+          $ref: '#/components/schemas/InventoryChangeSummary'
+        recentInventoryActivity:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockMovement'
+    CashierDashboardData:
+      type: object
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricCard'
+        recentSales:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sale'
+    AdminDashboardResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/AdminDashboardData'
+    ManagerDashboardResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/ManagerDashboardData'
+    ClerkDashboardResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/ClerkDashboardData'
+    CashierDashboardResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/CashierDashboardData'
+    ReportOptionsData:
+      type: object
+      properties:
+        reportTypes:
+          type: array
+          items:
+            type: string
+          example:
+          - Sales Summary
+          - Inventory Value
+          - Purchase Cost
+          - Low Stock
+          - Top Selling Products
+        groupByOptions:
+          type: array
+          items:
+            type: string
+          example:
+          - Day
+          - Week
+          - Month
+          - Category
+        compareWithOptions:
+          type: array
+          items:
+            type: string
+          example:
+          - No Comparison
+          - Previous Period
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+    ReportOptionsResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/ReportOptionsData'
+    TrendPoint:
+      type: object
+      properties:
+        label:
+          type: string
+          example: May 21
+        value:
+          type: number
+          format: double
+          example: 24000.0
+    TopSellingProduct:
+      type: object
+      properties:
+        rank:
+          type: integer
+          example: 1
+        productId:
+          type: integer
+          format: int64
+          example: 1
+        productName:
+          type: string
+          example: Keyboard
+        quantitySold:
+          type: integer
+          example: 45
+        salesAmount:
+          type: number
+          format: double
+          example: 38250.0
+    SalesSummaryReport:
+      type: object
+      properties:
+        dateFrom:
+          type: string
+          format: date
+          example: '2024-05-01'
+        dateTo:
+          type: string
+          format: date
+          example: '2024-05-21'
+        totalSales:
+          type: number
+          format: double
+          example: 185450.0
+        averagePerDay:
+          type: number
+          format: double
+          example: 8830.95
+        bestDay:
+          type: string
+          example: '2024-05-21'
+        totalOrders:
+          type: integer
+          example: 124
+        trend:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrendPoint'
+        topProducts:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopSellingProduct'
+    CategoryValue:
+      type: object
+      properties:
+        categoryName:
+          type: string
+          example: Electronics
+        inventoryValue:
+          type: number
+          format: double
+          example: 78250.0
+        percentage:
+          type: number
+          format: double
+          example: 42.0
+    InventoryValueReport:
+      type: object
+      properties:
+        totalInventoryValue:
+          type: number
+          format: double
+          example: 154200.0
+        byCategory:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryValue'
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+    PurchaseCostReport:
+      type: object
+      properties:
+        dateFrom:
+          type: string
+          format: date
+          example: '2024-05-01'
+        dateTo:
+          type: string
+          format: date
+          example: '2024-05-21'
+        totalPurchaseCost:
+          type: number
+          format: double
+          example: 98750.0
+        trend:
+          type: array
+          items:
+            $ref: '#/components/schemas/TrendPoint'
+    LowStockReport:
+      type: object
+      properties:
+        lowStockCount:
+          type: integer
+          example: 18
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+    TopSellingReport:
+      type: object
+      properties:
+        dateFrom:
+          type: string
+          format: date
+          example: '2024-05-01'
+        dateTo:
+          type: string
+          format: date
+          example: '2024-05-21'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopSellingProduct'
+    SalesSummaryReportResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/SalesSummaryReport'
+    InventoryValueReportResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/InventoryValueReport'
+    PurchaseCostReportResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/PurchaseCostReport'
+    LowStockReportResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/LowStockReport'
+    TopSellingReportResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/TopSellingReport'
+    CompanySettings:
+      type: object
+      properties:
+        companyName:
+          type: string
+          example: ABC Trading Corporation
+        address:
+          type: string
+          example: 123 Business Avenue, Makati City, Metro Manila, Philippines 1200
+        contactNumber:
+          type: string
+          example: (02) 8123-4567
+        emailAddress:
+          type: string
+          format: email
+          example: info@abctrading.com
+        website:
+          type: string
+          example: www.abctrading.com
+        fiscalYearStart:
+          type: string
+          example: January
+    InventorySettings:
+      type: object
+      properties:
+        lowStockThreshold:
+          type: integer
+          example: 10
+        reorderMultiplier:
+          type: number
+          format: double
+          example: 1.5
+        defaultProductStatus:
+          type: string
+          example: In Stock
+        costingMethod:
+          type: string
+          enum:
+          - Average Cost
+          - FIFO
+          - LIFO
+          example: Average Cost
+        allowNegativeStock:
+          type: boolean
+          example: false
+        showDeleteConfirmation:
+          type: boolean
+          example: true
+        autoUpdateTotalValues:
+          type: boolean
+          example: true
+        warnWhenStockFallsBelowThreshold:
+          type: boolean
+          example: true
+        trackProductExpirationDates:
+          type: boolean
+          example: true
+        defaultExpiryWarningDays:
+          type: integer
+          example: 30
+    CurrencyTaxSettings:
+      type: object
+      properties:
+        currency:
+          type: string
+          example: Philippine Peso (PHP)
+        currencySymbol:
+          type: string
+          example: ₱
+        defaultTaxRate:
+          type: number
+          format: double
+          example: 12.0
+        taxType:
+          type: string
+          enum:
+          - Inclusive of Tax
+          - Exclusive of Tax
+          example: Inclusive of Tax
+        rounding:
+          type: string
+          example: 2 Decimal Places
+    SecuritySettings:
+      type: object
+      properties:
+        sessionTimeoutMinutes:
+          type: integer
+          example: 30
+        passwordPolicy:
+          type: string
+          example: Strong (Recommended)
+        requireLoginOnStartup:
+          type: boolean
+          example: true
+        allowMultipleConcurrentSessions:
+          type: boolean
+          example: false
+        lockAccountAfterFailedAttempts:
+          type: integer
+          example: 5
+        requirePasswordChangeEveryDays:
+          type: integer
+          example: 90
+        minimumPasswordLength:
+          type: integer
+          example: 8
+        passwordExpiryDays:
+          type: integer
+          example: 90
+    NotificationSettings:
+      type: object
+      properties:
+        enableEmailNotifications:
+          type: boolean
+          example: true
+        smtpServer:
+          type: string
+          example: smtp.gmail.com
+        port:
+          type: integer
+          example: 587
+        useSsl:
+          type: boolean
+          example: true
+        fromEmail:
+          type: string
+          format: email
+          example: noreply@abctrading.com
+        lowStockAlerts:
+          type: boolean
+          example: true
+        dailySummaryReports:
+          type: boolean
+          example: false
+        backupStatusNotifications:
+          type: boolean
+          example: true
+    DatabaseSettings:
+      type: object
+      properties:
+        databaseType:
+          type: string
+          example: SQLite
+        databaseFile:
+          type: string
+          example: data/inventory.db
+        autoBackup:
+          type: boolean
+          example: true
+        backupOnExit:
+          type: boolean
+          example: true
+        backupFrequency:
+          type: string
+          example: Daily
+        backupTime:
+          type: string
+          example: 02:00 AM
+    SystemSettings:
+      type: object
+      properties:
+        company:
+          $ref: '#/components/schemas/CompanySettings'
+        inventory:
+          $ref: '#/components/schemas/InventorySettings'
+        currencyTax:
+          $ref: '#/components/schemas/CurrencyTaxSettings'
+        security:
+          $ref: '#/components/schemas/SecuritySettings'
+        notifications:
+          $ref: '#/components/schemas/NotificationSettings'
+        database:
+          $ref: '#/components/schemas/DatabaseSettings'
+    SystemSettingsResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/SystemSettings'
+    DatabaseTestData:
+      type: object
+      properties:
+        status:
+          type: string
+          example: Connected
+        databaseType:
+          type: string
+          example: SQLite
+        databaseFile:
+          type: string
+          example: data/inventory.db
+        responseTimeMs:
+          type: integer
+          example: 18
+    DatabaseTestResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/DatabaseTestData'
+    BackupData:
+      type: object
+      properties:
+        backupFile:
+          type: string
+          example: backup/inventory_20240521_103015.db
+        createdAt:
+          type: string
+          format: date-time
+          example: '2024-05-21T10:30:15Z'
+    BackupResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Request completed successfully.
+        data:
+          $ref: '#/components/schemas/BackupData'
+    RestoreRequest:
+      type: object
+      required:
+      - backupFile
+      properties:
+        backupFile:
+          type: string
+          example: backup/inventory_20240521_103015.db
+    AuditLog:
+      type: object
+      properties:
+        auditLogId:
+          type: integer
+          format: int64
+          example: 9001
+        dateTime:
+          type: string
+          format: date-time
+          example: '2024-05-21T10:30:15Z'
+        userId:
+          type: integer
+          format: int64
+          example: 1
+        username:
+          type: string
+          example: admin
+        action:
+          type: string
+          example: UPDATE_SETTINGS
+        module:
+          type: string
+          example: Settings
+        referenceNo:
+          type: string
+          nullable: true
+          example: SETTINGS-INVENTORY
+        details:
+          type: string
+          example: Updated low stock threshold to 10.
+    AuditLogListResponse:
+      type: object
+      required:
+      - success
+      - message
+      - data
+      - meta
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Records retrieved successfully.
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
