@@ -10,3 +10,6 @@ V009__seed_categories_suppliers_products.sql
 V010__create_purchase_orders_table.sql
 V011__create_purchase_order_items_table.sql
 V012__seed_sample_purchase_orders.sql
+V013__create_sales_table.sql
+V014__create_sale_items_table.sql
+V015__seed_sample_sales.sql
