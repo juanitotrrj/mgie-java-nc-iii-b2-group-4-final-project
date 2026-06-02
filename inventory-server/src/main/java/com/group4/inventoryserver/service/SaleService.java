@@ -75,6 +75,26 @@ public class SaleService {
     return new PaginatedResponse<>(data, meta);
   }
 
+  public List<SaleData> listAll(
+      String search,
+      String status,
+      String paymentMethod,
+      String dateFrom,
+      String dateTo,
+      Long cashierId) {
+    return saleRepository.findAll(
+        0,
+        Integer.MAX_VALUE,
+        "createdAt",
+        "desc",
+        search,
+        status,
+        paymentMethod,
+        dateFrom,
+        dateTo,
+        cashierId);
+  }
+
   public SaleDetailData getById(long saleId, long authUserId, boolean isPrivileged) {
     SaleData header = saleRepository.findById(saleId);
     if (header == null) {

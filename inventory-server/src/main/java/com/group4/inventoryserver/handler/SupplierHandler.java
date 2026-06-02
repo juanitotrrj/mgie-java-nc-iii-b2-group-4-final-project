@@ -7,12 +7,17 @@ import com.group4.inventoryserver.dto.supplier.SupplierCreateRequest;
 import com.group4.inventoryserver.dto.supplier.SupplierData;
 import com.group4.inventoryserver.dto.supplier.SupplierUpdateRequest;
 import com.group4.inventoryserver.exception.ApiException;
+import com.group4.inventoryserver.exception.ValidationException;
 import com.group4.inventoryserver.server.JsonResponse;
 import com.group4.inventoryserver.server.RequestContext;
 import com.group4.inventoryserver.service.SupplierService;
+import com.group4.inventoryserver.util.ExportUtil;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class SupplierHandler extends BaseHandler {
@@ -40,6 +45,8 @@ public class SupplierHandler extends BaseHandler {
 
     if (pathParam == null || pathParam.isEmpty()) {
       handleCollection(ctx, method);
+    } else if ("export".equals(pathParam)) {
+      handleExport(ctx);
     } else if (pathParam.matches("\\d+")) {
       handleItem(ctx, method, Long.parseLong(pathParam));
     } else {
@@ -112,5 +119,58 @@ public class SupplierHandler extends BaseHandler {
     long authUserId = getAuthUserId(ctx);
     supplierService.deactivate(supplierId, authUserId);
     sendSuccess(ctx, null);
+  }
+
+  private void handleExport(RequestContext ctx) throws IOException {
+    if (!"GET".equals(ctx.getMethod())) {
+      throw new ApiException(405, "Method Not Allowed: " + ctx.getMethod());
+    }
+    requirePermission(ctx, "EXPORT_DATA");
+    String search = ctx.getQueryParam("search");
+    String status = ctx.getQueryParam("status");
+    String type = ctx.getQueryParam("type");
+    String format = ctx.getQueryParam("format");
+    if (format == null || format.trim().isEmpty()) format = "csv";
+    format = format.toLowerCase();
+    if (!"csv".equals(format) && !"xlsx".equals(format)) {
+      throw new ValidationException("Supported formats: csv, xlsx");
+    }
+
+    List<SupplierData> suppliers = supplierService.listAll(search, status, type);
+    String[] headers = {
+      "Supplier Code", "Supplier Name", "Type", "Contact Person", "Phone", "Email", "Status"
+    };
+    List<String[]> rows = new ArrayList<>();
+    for (SupplierData s : suppliers) {
+      rows.add(
+          new String[] {
+            s.getSupplierCode(),
+            s.getSupplierName(),
+            s.getType() != null ? s.getType() : "",
+            s.getContactPerson() != null ? s.getContactPerson() : "",
+            s.getPhone() != null ? s.getPhone() : "",
+            s.getEmail() != null ? s.getEmail() : "",
+            s.getStatus()
+          });
+    }
+
+    byte[] content;
+    String contentType;
+    if ("xlsx".equals(format)) {
+      content = ExportUtil.toXlsx("suppliers", headers, rows);
+      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    } else {
+      content = ExportUtil.toCsv(headers, rows);
+      contentType = "text/csv; charset=UTF-8";
+    }
+    String filename = "suppliers-export." + format;
+    ctx.getExchange().getResponseHeaders().set("Content-Type", contentType);
+    ctx.getExchange()
+        .getResponseHeaders()
+        .set("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+    ctx.getExchange().sendResponseHeaders(200, content.length);
+    try (OutputStream os = ctx.getExchange().getResponseBody()) {
+      os.write(content);
+    }
   }
 }

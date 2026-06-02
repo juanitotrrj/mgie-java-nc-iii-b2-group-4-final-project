@@ -8,12 +8,17 @@ import com.group4.inventoryserver.dto.product.ProductData;
 import com.group4.inventoryserver.dto.product.ProductUpdateRequest;
 import com.group4.inventoryserver.dto.product.StockMovementData;
 import com.group4.inventoryserver.exception.ApiException;
+import com.group4.inventoryserver.exception.ValidationException;
 import com.group4.inventoryserver.server.JsonResponse;
 import com.group4.inventoryserver.server.RequestContext;
 import com.group4.inventoryserver.service.ProductService;
+import com.group4.inventoryserver.util.ExportUtil;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class ProductHandler extends BaseHandler {
@@ -42,6 +47,8 @@ public class ProductHandler extends BaseHandler {
 
     if (pathParam == null || pathParam.isEmpty()) {
       handleCollection(ctx, method);
+    } else if ("export".equals(pathParam)) {
+      handleExport(ctx);
     } else if (pathParam.matches("\\d+/stock-movements")) {
       handleStockMovements(ctx, pathParam);
     } else if (pathParam.matches("\\d+")) {
@@ -130,6 +137,73 @@ public class ProductHandler extends BaseHandler {
     long authUserId = getAuthUserId(ctx);
     productService.deactivate(productId, authUserId);
     sendSuccess(ctx, null);
+  }
+
+  private void handleExport(RequestContext ctx) throws IOException {
+    if (!"GET".equals(ctx.getMethod())) {
+      throw new ApiException(405, "Method Not Allowed: " + ctx.getMethod());
+    }
+    requirePermission(ctx, "EXPORT_DATA");
+    String search = ctx.getQueryParam("search");
+    String categoryIdParam = ctx.getQueryParam("categoryId");
+    Long categoryId = parseLongOrNull(categoryIdParam);
+    String status = ctx.getQueryParam("status");
+    String format = ctx.getQueryParam("format");
+    if (format == null || format.trim().isEmpty()) format = "csv";
+    format = format.toLowerCase();
+    if (!"csv".equals(format) && !"xlsx".equals(format)) {
+      throw new ValidationException("Supported formats: csv, xlsx");
+    }
+
+    List<ProductData> products = productService.listAll(search, categoryId, status);
+
+    String[] headers = {
+      "Product Code",
+      "Product Name",
+      "Category",
+      "Quantity",
+      "Reorder Level",
+      "Unit Price",
+      "Status"
+    };
+    List<String[]> rows = new ArrayList<>();
+    for (ProductData p : products) {
+      rows.add(
+          new String[] {
+            p.getProductCode(),
+            p.getProductName(),
+            p.getCategoryName() != null ? p.getCategoryName() : "",
+            String.valueOf(p.getQuantity()),
+            String.valueOf(p.getReorderLevel()),
+            String.valueOf(p.getUnitPrice()),
+            p.getStatus()
+          });
+    }
+
+    sendExportResponse(ctx, "products", format, headers, rows);
+  }
+
+  private void sendExportResponse(
+      RequestContext ctx, String name, String format, String[] headers, List<String[]> rows)
+      throws IOException {
+    byte[] content;
+    String contentType;
+    if ("xlsx".equals(format)) {
+      content = ExportUtil.toXlsx(name, headers, rows);
+      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    } else {
+      content = ExportUtil.toCsv(headers, rows);
+      contentType = "text/csv; charset=UTF-8";
+    }
+    String filename = name + "-export." + format;
+    ctx.getExchange().getResponseHeaders().set("Content-Type", contentType);
+    ctx.getExchange()
+        .getResponseHeaders()
+        .set("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+    ctx.getExchange().sendResponseHeaders(200, content.length);
+    try (OutputStream os = ctx.getExchange().getResponseBody()) {
+      os.write(content);
+    }
   }
 
   private Long parseLongOrNull(String value) {

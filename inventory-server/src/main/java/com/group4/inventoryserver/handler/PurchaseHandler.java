@@ -10,12 +10,17 @@ import com.group4.inventoryserver.dto.purchase.PurchaseDetailData;
 import com.group4.inventoryserver.dto.purchase.PurchaseUpdateRequest;
 import com.group4.inventoryserver.dto.purchase.ReceivePurchaseRequest;
 import com.group4.inventoryserver.exception.ApiException;
+import com.group4.inventoryserver.exception.ValidationException;
 import com.group4.inventoryserver.server.JsonResponse;
 import com.group4.inventoryserver.server.RequestContext;
 import com.group4.inventoryserver.service.PurchaseService;
+import com.group4.inventoryserver.util.ExportUtil;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class PurchaseHandler extends BaseHandler {
@@ -42,6 +47,8 @@ public class PurchaseHandler extends BaseHandler {
 
     if (pathParam == null || pathParam.isEmpty()) {
       handleCollection(ctx, method);
+    } else if ("export".equals(pathParam)) {
+      handleExport(ctx);
     } else if (pathParam.matches("\\d+/receive")) {
       handleReceive(ctx, pathParam);
     } else if (pathParam.matches("\\d+/cancel")) {
@@ -136,6 +143,62 @@ public class PurchaseHandler extends BaseHandler {
     PurchaseUpdateRequest request = parseBody(ctx, PurchaseUpdateRequest.class);
     PurchaseDetailData data = purchaseService.update(purchaseId, request, authUserId);
     sendSuccess(ctx, data);
+  }
+
+  private void handleExport(RequestContext ctx) throws IOException {
+    if (!"GET".equals(ctx.getMethod())) {
+      throw new ApiException(405, "Method Not Allowed: " + ctx.getMethod());
+    }
+    requirePermission(ctx, "EXPORT_DATA");
+    String search = ctx.getQueryParam("search");
+    String supplierIdParam = ctx.getQueryParam("supplierId");
+    Long supplierId = parseLongOrNull(supplierIdParam);
+    String status = ctx.getQueryParam("status");
+    String dateFrom = ctx.getQueryParam("dateFrom");
+    String dateTo = ctx.getQueryParam("dateTo");
+    String format = ctx.getQueryParam("format");
+    if (format == null || format.trim().isEmpty()) format = "csv";
+    format = format.toLowerCase();
+    if (!"csv".equals(format) && !"xlsx".equals(format)) {
+      throw new ValidationException("Supported formats: csv, xlsx");
+    }
+
+    List<PurchaseData> purchases =
+        purchaseService.listAll(search, supplierId, status, dateFrom, dateTo);
+    String[] headers = {
+      "PO Number", "Supplier", "Order Date", "Total Amount", "Status", "Created At"
+    };
+    List<String[]> rows = new ArrayList<>();
+    for (PurchaseData p : purchases) {
+      rows.add(
+          new String[] {
+            p.getPoNumber(),
+            p.getSupplierName() != null ? p.getSupplierName() : "",
+            p.getOrderDate() != null ? p.getOrderDate() : "",
+            String.valueOf(p.getTotalAmount()),
+            p.getStatus(),
+            p.getCreatedAt() != null ? p.getCreatedAt() : ""
+          });
+    }
+
+    byte[] content;
+    String contentType;
+    if ("xlsx".equals(format)) {
+      content = ExportUtil.toXlsx("purchases", headers, rows);
+      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    } else {
+      content = ExportUtil.toCsv(headers, rows);
+      contentType = "text/csv; charset=UTF-8";
+    }
+    String filename = "purchases-export." + format;
+    ctx.getExchange().getResponseHeaders().set("Content-Type", contentType);
+    ctx.getExchange()
+        .getResponseHeaders()
+        .set("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+    ctx.getExchange().sendResponseHeaders(200, content.length);
+    try (OutputStream os = ctx.getExchange().getResponseBody()) {
+      os.write(content);
+    }
   }
 
   private Long parseLongOrNull(String value) {

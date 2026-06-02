@@ -64,6 +64,10 @@ public class UserService {
     return new PaginatedResponse<>(data, meta);
   }
 
+  public List<UserData> listAll(String search, String role, String status) {
+    return userRepository.findAll(0, Integer.MAX_VALUE, "fullName", "asc", search, role, status);
+  }
+
   public UserData getById(long userId) {
     UserData user = userRepository.findDetailById(userId);
     if (user == null) {

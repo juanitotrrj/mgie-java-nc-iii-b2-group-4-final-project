@@ -66,6 +66,12 @@ public class PurchaseService {
     return new PaginatedResponse<>(data, meta);
   }
 
+  public List<PurchaseData> listAll(
+      String search, Long supplierId, String status, String dateFrom, String dateTo) {
+    return purchaseRepository.findAll(
+        0, Integer.MAX_VALUE, "createdAt", "desc", search, supplierId, status, dateFrom, dateTo);
+  }
+
   public PurchaseDetailData getById(long purchaseOrderId) {
     PurchaseData header = purchaseRepository.findById(purchaseOrderId);
     if (header == null) {

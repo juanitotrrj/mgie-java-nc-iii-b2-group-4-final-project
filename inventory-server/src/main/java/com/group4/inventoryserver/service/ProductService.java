@@ -59,6 +59,11 @@ public class ProductService {
     return new PaginatedResponse<>(data, meta);
   }
 
+  public List<ProductData> listAll(String search, Long categoryId, String status) {
+    return productRepository.findAll(
+        0, Integer.MAX_VALUE, "productName", "asc", search, categoryId, status);
+  }
+
   public ProductData getById(long productId) {
     ProductData product = productRepository.findById(productId);
     if (product == null) {
