@@ -16,9 +16,14 @@ public class ApiClient {
   private static final Gson GSON = new Gson();
   private final String baseUrl;
   private String setupToken;
+  private String bearerToken;
 
   public ApiClient(String baseUrl) {
     this.baseUrl = baseUrl;
+  }
+
+  public String getBaseUrl() {
+    return baseUrl;
   }
 
   public void setSetupToken(String token) {
@@ -27,6 +32,18 @@ public class ApiClient {
 
   public String getSetupToken() {
     return setupToken;
+  }
+
+  public void setBearerToken(String token) {
+    this.bearerToken = token;
+  }
+
+  public String getBearerToken() {
+    return bearerToken;
+  }
+
+  public ApiResponse delete(String path) throws IOException {
+    return request("DELETE", path, null);
   }
 
   public ApiResponse get(String path) throws IOException {
@@ -50,6 +67,9 @@ public class ApiClient {
     conn.setConnectTimeout(10000);
     conn.setReadTimeout(30000);
 
+    if (bearerToken != null && !bearerToken.isEmpty()) {
+      conn.setRequestProperty("Authorization", "Bearer " + bearerToken);
+    }
     if (setupToken != null && !setupToken.isEmpty()) {
       conn.setRequestProperty("X-Setup-Token", setupToken);
     }
@@ -114,6 +134,24 @@ public class ApiClient {
       JsonElement data = root.get("data");
       if (data != null && data.isJsonObject()) return data.getAsJsonObject();
       return root;
+    }
+
+    public com.google.gson.JsonArray getDataAsArray() {
+      JsonObject root = JsonParser.parseString(body).getAsJsonObject();
+      JsonElement data = root.get("data");
+      if (data != null && data.isJsonArray()) return data.getAsJsonArray();
+      return new com.google.gson.JsonArray();
+    }
+
+    public JsonObject getMeta() {
+      JsonObject root = JsonParser.parseString(body).getAsJsonObject();
+      JsonElement meta = root.get("meta");
+      if (meta != null && meta.isJsonObject()) return meta.getAsJsonObject();
+      return null;
+    }
+
+    public JsonObject getRawRoot() {
+      return JsonParser.parseString(body).getAsJsonObject();
     }
 
     public String getErrorMessage() {
