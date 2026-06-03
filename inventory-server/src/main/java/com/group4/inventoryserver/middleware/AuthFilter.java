@@ -24,7 +24,8 @@ public class AuthFilter extends Filter {
               "/api/public/about",
               "/api/public/contact",
               "/api/public/inquiries",
-              "/api/docs"));
+              "/api/docs",
+              "/api/setup"));
 
   private final AuthService authService = new AuthService();
   private final UserRepository userRepository = new UserRepository();

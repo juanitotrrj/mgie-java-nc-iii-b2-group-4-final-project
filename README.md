@@ -84,21 +84,18 @@ Create the database:
 mysql -u root -p -e "CREATE DATABASE inventory_system_group4 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
 
-#### 4. Register Environment Variables
+#### 4. Configure Environment
 
 ```powershell
-cd inventory-server\scripts
-powershell -ExecutionPolicy Bypass -File .\register-server-env-windows.ps1
+cd inventory-server
+copy .env.example .env
 ```
 
-Edit the sensitive values afterward:
+Edit `.env` with your database credentials and secrets, or run the interactive setup:
 
 ```powershell
-[Environment]::SetEnvironmentVariable("G4IMS_SERVER_DB_PASSWORD", "your_actual_password", "User")
-[Environment]::SetEnvironmentVariable("G4IMS_SERVER_AUTH_TOKEN_SECRET", "a_random_string_at_least_32_characters_long", "User")
+java -jar target\inventory-server-1.0.0.jar setup
 ```
-
-Restart PowerShell after registering.
 
 #### 5. Build and Run
 
@@ -148,17 +145,17 @@ mysql -u root -e "CREATE USER 'inventory_user'@'localhost' IDENTIFIED BY 'your_p
 mysql -u root -e "GRANT ALL PRIVILEGES ON inventory_system_group4.* TO 'inventory_user'@'localhost';"
 ```
 
-#### 4. Register Environment Variables
+#### 4. Configure Environment
 
 ```bash
-cd inventory-server/scripts
-bash register-server-env-linux.sh
+cd inventory-server
+cp .env.example .env
 ```
 
-Edit `~/.config/g4ims/g4ims-server.env` and set your actual database password and token secret, then reload:
+Edit `.env` with your database credentials and secrets, or run the interactive setup:
 
 ```bash
-source ~/.config/g4ims/g4ims-server.env
+java -jar target/inventory-server-1.0.0.jar setup
 ```
 
 #### 5. Build and Run
@@ -216,23 +213,17 @@ sudo mysql -e "GRANT ALL PRIVILEGES ON inventory_system_group4.* TO 'inventory_u
 sudo mysql -e "FLUSH PRIVILEGES;"
 ```
 
-#### 3. Register Environment Variables
+#### 3. Configure Environment
 
 ```bash
-cd inventory-server/scripts
-bash register-server-env-linux.sh
+cd inventory-server
+cp .env.example .env
 ```
 
-Edit `~/.config/g4ims/g4ims-server.env` and replace the default passwords/secrets:
+Edit `.env` with your database credentials and secrets, or run the interactive setup:
 
 ```bash
-nano ~/.config/g4ims/g4ims-server.env
-```
-
-Reload:
-
-```bash
-source ~/.config/g4ims/g4ims-server.env
+java -jar target/inventory-server-1.0.0.jar setup
 ```
 
 #### 4. Build and Run
@@ -269,7 +260,7 @@ java -jar target/inventory-server-1.0.0.jar migrate:rollback
 
 ## Environment Configuration
 
-All configuration is driven by environment variables prefixed with `G4IMS_SERVER_*` (server) and `G4IMS_CLIENT_*` (client). See `inventory-server/scripts/g4ims-server.env.example` for the full list of 116 server variables.
+All configuration is driven by a `.env` file in the `inventory-server/` directory using keys prefixed with `G4IMS_SERVER_*`. See `inventory-server/.env.example` for the full list of server variables. System environment variables still work as a fallback but `.env` is the recommended approach.
 
 Key variables to set before first run:
 
@@ -443,8 +434,8 @@ Configure your IDE to use 2-space indentation, no tabs, and 100-character line w
 
 - Java source level: **8** (no Java 9+ APIs)
 - Build JDK: **17**
-- All configuration via environment variables (`G4IMS_SERVER_*`)
-- No `application.properties` committed — use `scripts/g4ims-server.env.example` as reference
+- All configuration via `.env` file (`G4IMS_SERVER_*` keys)
+- No `application.properties` committed — use `.env.example` as reference
 - Sensitive values (passwords, secrets) must never be committed to git
 
 ### Useful Maven Commands
