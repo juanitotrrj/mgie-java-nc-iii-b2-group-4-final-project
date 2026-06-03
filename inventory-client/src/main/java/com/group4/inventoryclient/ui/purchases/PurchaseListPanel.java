@@ -1,0 +1,215 @@
+package com.group4.inventoryclient.ui.purchases;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.group4.inventoryclient.api.ApiClient;
+import com.group4.inventoryclient.api.PurchaseApiClient;
+import com.group4.inventoryclient.ui.components.ExportButton;
+import com.group4.inventoryclient.ui.components.PaginatedTable;
+import com.group4.inventoryclient.ui.components.SearchFilterBar;
+import com.group4.inventoryclient.util.SwingUtil;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
+import java.awt.Frame;
+import java.util.HashMap;
+import java.util.Map;
+import javax.swing.JButton;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+
+public class PurchaseListPanel extends JPanel {
+
+  private final PurchaseApiClient purchaseApi;
+  private final ApiClient apiClient;
+  private final Frame parentFrame;
+  private final SearchFilterBar searchBar = new SearchFilterBar();
+  private final PaginatedTable table =
+      new PaginatedTable(
+          new String[] {"ID", "Supplier", "Order Date", "Expected Date", "Status", "Total"});
+
+  private final JButton addBtn = new JButton("Add");
+  private final JButton receiveBtn = new JButton("Receive");
+  private final JButton cancelBtn = new JButton("Cancel");
+  private final JButton refreshBtn = new JButton("Refresh");
+
+  public PurchaseListPanel(ApiClient apiClient, Frame parentFrame) {
+    super(new BorderLayout(5, 5));
+    this.apiClient = apiClient;
+    this.purchaseApi = new PurchaseApiClient(apiClient);
+    this.parentFrame = parentFrame;
+
+    searchBar.addFilter(
+        "Status", new String[] {"All", "Pending", "Delivered", "Received", "Cancelled"});
+    searchBar.setSearchListener(q -> loadData(1));
+    add(searchBar, BorderLayout.NORTH);
+
+    add(table, BorderLayout.CENTER);
+
+    JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+    toolbar.add(addBtn);
+    toolbar.add(receiveBtn);
+    toolbar.add(cancelBtn);
+    toolbar.add(refreshBtn);
+    toolbar.add(new ExportButton(apiClient, "/exports/resources?type=purchases&format=csv", this));
+    add(toolbar, BorderLayout.SOUTH);
+
+    table.setPageChangeListener(this::loadData);
+
+    addBtn.addActionListener(e -> showAddDialog());
+    receiveBtn.addActionListener(e -> handleReceive());
+    cancelBtn.addActionListener(e -> handleCancel());
+    refreshBtn.addActionListener(e -> loadData(table.getCurrentPage()));
+
+    loadData(1);
+  }
+
+  private void loadData(int page) {
+    new Thread(
+            () -> {
+              try {
+                String search = searchBar.getSearchText();
+                String status = searchBar.getFilterValue(0);
+                ApiClient.ApiResponse response = purchaseApi.list(page, search, status);
+                if (response.isSuccess()) {
+                  JsonArray data = response.getDataAsArray();
+                  JsonObject meta = response.getMeta();
+                  int totalPages = meta != null ? meta.get("lastPage").getAsInt() : 1;
+
+                  Object[][] rows = new Object[data.size()][6];
+                  for (int i = 0; i < data.size(); i++) {
+                    JsonObject item = data.get(i).getAsJsonObject();
+                    rows[i][0] = item.get("id").getAsLong();
+                    rows[i][1] =
+                        item.has("supplier") && !item.get("supplier").isJsonNull()
+                            ? item.getAsJsonObject("supplier").get("name").getAsString()
+                            : "N/A";
+                    rows[i][2] =
+                        item.has("orderDate") && !item.get("orderDate").isJsonNull()
+                            ? item.get("orderDate").getAsString()
+                            : "N/A";
+                    rows[i][3] =
+                        item.has("expectedDeliveryDate")
+                                && !item.get("expectedDeliveryDate").isJsonNull()
+                            ? item.get("expectedDeliveryDate").getAsString()
+                            : "N/A";
+                    rows[i][4] =
+                        item.has("status") && !item.get("status").isJsonNull()
+                            ? item.get("status").getAsString()
+                            : "N/A";
+                    rows[i][5] =
+                        item.has("totalAmount") && !item.get("totalAmount").isJsonNull()
+                            ? String.format("%.2f", item.get("totalAmount").getAsDouble())
+                            : "0.00";
+                  }
+                  SwingUtilities.invokeLater(() -> table.setData(rows, page, totalPages));
+                } else {
+                  SwingUtilities.invokeLater(
+                      () -> SwingUtil.showError(this, response.getErrorMessage()));
+                }
+              } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> SwingUtil.showError(this, ex.getMessage()));
+              }
+            })
+        .start();
+  }
+
+  private void showAddDialog() {
+    PurchaseFormDialog dialog = new PurchaseFormDialog(parentFrame);
+    dialog.showAndWait();
+    if (dialog.isConfirmed()) {
+      Map<String, Object> data = dialog.getFormData();
+      new Thread(
+              () -> {
+                try {
+                  ApiClient.ApiResponse response = purchaseApi.create(data);
+                  if (response.isSuccess()) {
+                    SwingUtilities.invokeLater(
+                        () -> {
+                          SwingUtil.showInfo(this, "Purchase order created successfully");
+                          loadData(1);
+                        });
+                  } else {
+                    SwingUtilities.invokeLater(
+                        () -> SwingUtil.showError(this, response.getErrorMessage()));
+                  }
+                } catch (Exception ex) {
+                  SwingUtilities.invokeLater(() -> SwingUtil.showError(this, ex.getMessage()));
+                }
+              })
+          .start();
+    }
+  }
+
+  private void handleReceive() {
+    int row = table.getSelectedRow();
+    if (row == -1) {
+      SwingUtil.showError(this, "Please select a purchase order");
+      return;
+    }
+    long id = (Long) table.getTable().getValueAt(row, 0);
+    int confirm =
+        JOptionPane.showConfirmDialog(
+            this,
+            "Confirm receipt of this purchase order?",
+            "Receive Purchase",
+            JOptionPane.YES_NO_OPTION);
+    if (confirm == JOptionPane.YES_OPTION) {
+      new Thread(
+              () -> {
+                try {
+                  Map<String, Object> body = new HashMap<>();
+                  ApiClient.ApiResponse response = purchaseApi.receive(id, body);
+                  if (response.isSuccess()) {
+                    SwingUtilities.invokeLater(
+                        () -> {
+                          SwingUtil.showInfo(this, "Purchase order received successfully");
+                          loadData(table.getCurrentPage());
+                        });
+                  } else {
+                    SwingUtilities.invokeLater(
+                        () -> SwingUtil.showError(this, response.getErrorMessage()));
+                  }
+                } catch (Exception ex) {
+                  SwingUtilities.invokeLater(() -> SwingUtil.showError(this, ex.getMessage()));
+                }
+              })
+          .start();
+    }
+  }
+
+  private void handleCancel() {
+    int row = table.getSelectedRow();
+    if (row == -1) {
+      SwingUtil.showError(this, "Please select a purchase order");
+      return;
+    }
+    long id = (Long) table.getTable().getValueAt(row, 0);
+    String reason =
+        JOptionPane.showInputDialog(
+            this, "Enter cancellation reason:", "Cancel Purchase", JOptionPane.PLAIN_MESSAGE);
+    if (reason != null && !reason.trim().isEmpty()) {
+      new Thread(
+              () -> {
+                try {
+                  Map<String, Object> body = new HashMap<>();
+                  body.put("reason", reason.trim());
+                  ApiClient.ApiResponse response = purchaseApi.cancel(id, body);
+                  if (response.isSuccess()) {
+                    SwingUtilities.invokeLater(
+                        () -> {
+                          SwingUtil.showInfo(this, "Purchase order cancelled successfully");
+                          loadData(table.getCurrentPage());
+                        });
+                  } else {
+                    SwingUtilities.invokeLater(
+                        () -> SwingUtil.showError(this, response.getErrorMessage()));
+                  }
+                } catch (Exception ex) {
+                  SwingUtilities.invokeLater(() -> SwingUtil.showError(this, ex.getMessage()));
+                }
+              })
+          .start();
+    }
+  }
+}
