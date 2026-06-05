@@ -34,8 +34,12 @@ public class SetupService {
   private final SetupSessionRepository sessionRepo;
 
   public SetupService() {
-    this.installationRepo = new SystemInstallationRepository();
-    this.sessionRepo = new SetupSessionRepository();
+    this(new SystemInstallationRepository(), new SetupSessionRepository());
+  }
+
+  SetupService(SystemInstallationRepository installationRepo, SetupSessionRepository sessionRepo) {
+    this.installationRepo = installationRepo;
+    this.sessionRepo = sessionRepo;
   }
 
   public SetupStatusResponse getStatus() {

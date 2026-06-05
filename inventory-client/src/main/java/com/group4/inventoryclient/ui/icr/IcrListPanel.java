@@ -6,6 +6,8 @@ import com.group4.inventoryclient.api.ApiClient;
 import com.group4.inventoryclient.api.IcrApiClient;
 import com.group4.inventoryclient.ui.components.PaginatedTable;
 import com.group4.inventoryclient.ui.components.SearchFilterBar;
+import com.group4.inventoryclient.util.JsonFieldUtil;
+import com.group4.inventoryclient.util.PaginationUtil;
 import com.group4.inventoryclient.util.SwingUtil;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -69,36 +71,32 @@ public class IcrListPanel extends JPanel {
                 if (response.isSuccess()) {
                   JsonArray data = response.getDataAsArray();
                   JsonObject meta = response.getMeta();
-                  int totalPages = meta != null ? meta.get("lastPage").getAsInt() : 1;
+                  int totalPages = PaginationUtil.totalPages(meta);
 
                   Object[][] rows = new Object[data.size()][7];
                   for (int i = 0; i < data.size(); i++) {
                     JsonObject item = data.get(i).getAsJsonObject();
-                    rows[i][0] = item.get("id").getAsLong();
-                    rows[i][1] =
-                        item.has("product") && !item.get("product").isJsonNull()
-                            ? item.getAsJsonObject("product").get("name").getAsString()
-                            : "N/A";
-                    rows[i][2] =
-                        item.has("requestType") && !item.get("requestType").isJsonNull()
-                            ? item.get("requestType").getAsString()
-                            : "N/A";
+                    rows[i][0] = JsonFieldUtil.getLong(item, "requestId", "id");
+                    rows[i][1] = JsonFieldUtil.getString(item, "N/A", "productName");
+                    if ("N/A".equals(rows[i][1])
+                        && item.has("product")
+                        && item.get("product").isJsonObject()) {
+                      rows[i][1] =
+                          JsonFieldUtil.getString(item.getAsJsonObject("product"), "N/A", "name");
+                    }
+                    rows[i][2] = JsonFieldUtil.getString(item, "N/A", "requestType");
                     rows[i][3] =
-                        item.has("quantity") && !item.get("quantity").isJsonNull()
-                            ? item.get("quantity").getAsInt()
-                            : 0;
-                    rows[i][4] =
-                        item.has("requester") && !item.get("requester").isJsonNull()
-                            ? item.getAsJsonObject("requester").get("name").getAsString()
-                            : "N/A";
-                    rows[i][5] =
-                        item.has("status") && !item.get("status").isJsonNull()
-                            ? item.get("status").getAsString()
-                            : "N/A";
-                    rows[i][6] =
-                        item.has("requestDate") && !item.get("requestDate").isJsonNull()
-                            ? item.get("requestDate").getAsString()
-                            : "N/A";
+                        JsonFieldUtil.getInt(
+                            item, "quantityChange", "requestedQuantity", "quantity");
+                    rows[i][4] = JsonFieldUtil.getString(item, "N/A", "requestedBy");
+                    if ("N/A".equals(rows[i][4])
+                        && item.has("requester")
+                        && item.get("requester").isJsonObject()) {
+                      rows[i][4] =
+                          JsonFieldUtil.getString(item.getAsJsonObject("requester"), "N/A", "name");
+                    }
+                    rows[i][5] = JsonFieldUtil.getString(item, "N/A", "status");
+                    rows[i][6] = JsonFieldUtil.getString(item, "N/A", "requestedAt", "requestDate");
                   }
                   SwingUtilities.invokeLater(() -> table.setData(rows, page, totalPages));
                 } else {

@@ -3,7 +3,9 @@ package com.group4.inventoryclient.ui.products;
 import com.google.gson.JsonObject;
 import com.group4.inventoryclient.ui.components.FormDialog;
 import java.awt.Frame;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.swing.JComboBox;
 import javax.swing.JScrollPane;
@@ -14,46 +16,88 @@ public class ProductFormDialog extends FormDialog {
 
   private final JTextField nameField;
   private final JTextField skuField;
-  private final JTextField categoryIdField;
+  private final JComboBox<CategoryOption> categoryCombo;
   private final JTextArea descriptionArea;
+  private final JTextField quantityField;
   private final JTextField unitPriceField;
   private final JTextField reorderLevelField;
   private final JComboBox<String> statusCombo;
 
   public ProductFormDialog(Frame owner, JsonObject product) {
+    this(owner, product, Collections.emptyList());
+  }
+
+  public ProductFormDialog(Frame owner, JsonObject product, List<CategoryOption> categories) {
     super(owner, product == null ? "Add Product" : "Edit Product");
 
     nameField = new JTextField(20);
     skuField = new JTextField(20);
-    categoryIdField = new JTextField(20);
+    categoryCombo = new JComboBox<>();
     descriptionArea = new JTextArea(3, 20);
     descriptionArea.setLineWrap(true);
     descriptionArea.setWrapStyleWord(true);
+    quantityField = new JTextField(20);
     unitPriceField = new JTextField(20);
     reorderLevelField = new JTextField(20);
-    statusCombo = new JComboBox<>(new String[] {"Active", "Inactive"});
+    statusCombo =
+        new JComboBox<>(new String[] {"In Stock", "Low Stock", "Out of Stock", "Inactive"});
+
+    for (CategoryOption option : categories) {
+      categoryCombo.addItem(option);
+    }
+    if (categoryCombo.getItemCount() > 0) {
+      categoryCombo.setSelectedIndex(0);
+    }
 
     addField("Name", nameField);
     addField("SKU", skuField);
-    addField("Category ID", categoryIdField);
+    addField("Category", categoryCombo);
     addField("Description", new JScrollPane(descriptionArea));
+    addField("Quantity", quantityField);
     addField("Unit Price", unitPriceField);
     addField("Reorder Level", reorderLevelField);
     addField("Status", statusCombo);
 
     if (product != null) {
-      if (product.has("name")) nameField.setText(product.get("name").getAsString());
-      if (product.has("sku")) skuField.setText(product.get("sku").getAsString());
-      if (product.has("categoryId"))
-        categoryIdField.setText(product.get("categoryId").getAsString());
-      if (product.has("description"))
+      if (product.has("productName")) {
+        nameField.setText(product.get("productName").getAsString());
+      } else if (product.has("name")) {
+        nameField.setText(product.get("name").getAsString());
+      }
+      if (product.has("productCode")) {
+        skuField.setText(product.get("productCode").getAsString());
+      } else if (product.has("sku")) {
+        skuField.setText(product.get("sku").getAsString());
+      }
+      selectCategory(product);
+      if (product.has("description")) {
         descriptionArea.setText(product.get("description").getAsString());
-      if (product.has("unitPrice")) unitPriceField.setText(product.get("unitPrice").getAsString());
-      if (product.has("reorderLevel"))
+      }
+      if (product.has("quantity")) {
+        quantityField.setText(product.get("quantity").getAsString());
+      }
+      if (product.has("unitPrice")) {
+        unitPriceField.setText(product.get("unitPrice").getAsString());
+      }
+      if (product.has("reorderLevel")) {
         reorderLevelField.setText(product.get("reorderLevel").getAsString());
+      }
       if (product.has("status")) {
-        String status = product.get("status").getAsString();
-        statusCombo.setSelectedItem(status);
+        statusCombo.setSelectedItem(product.get("status").getAsString());
+      }
+    }
+  }
+
+  private void selectCategory(JsonObject product) {
+    if (!product.has("categoryId")) {
+      return;
+    }
+    long categoryId = product.get("categoryId").getAsLong();
+    for (int i = 0; i < categoryCombo.getItemCount(); i++) {
+      CategoryOption option = categoryCombo.getItemAt(i);
+      if (option.getCategoryId() == categoryId) {
+        categoryCombo.setSelectedIndex(i);
+        return;
       }
     }
   }
@@ -68,6 +112,29 @@ public class ProductFormDialog extends FormDialog {
     if (skuField.getText().trim().isEmpty()) {
       javax.swing.JOptionPane.showMessageDialog(
           this, "SKU is required", "Validation Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+      return false;
+    }
+    if (categoryCombo.getSelectedItem() == null) {
+      javax.swing.JOptionPane.showMessageDialog(
+          this, "Category is required", "Validation Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+      return false;
+    }
+    try {
+      int quantity = Integer.parseInt(quantityField.getText().trim());
+      if (quantity < 0) {
+        javax.swing.JOptionPane.showMessageDialog(
+            this,
+            "Quantity must not be negative",
+            "Validation Error",
+            javax.swing.JOptionPane.ERROR_MESSAGE);
+        return false;
+      }
+    } catch (NumberFormatException e) {
+      javax.swing.JOptionPane.showMessageDialog(
+          this,
+          "Quantity must be a valid whole number",
+          "Validation Error",
+          javax.swing.JOptionPane.ERROR_MESSAGE);
       return false;
     }
     try {
@@ -85,19 +152,16 @@ public class ProductFormDialog extends FormDialog {
 
   public Map<String, Object> getFormData() {
     Map<String, Object> data = new HashMap<>();
-    data.put("name", nameField.getText().trim());
-    data.put("sku", skuField.getText().trim());
+    data.put("productName", nameField.getText().trim());
+    data.put("productCode", skuField.getText().trim());
 
-    String categoryIdText = categoryIdField.getText().trim();
-    if (!categoryIdText.isEmpty()) {
-      try {
-        data.put("categoryId", Long.parseLong(categoryIdText));
-      } catch (NumberFormatException e) {
-        data.put("categoryId", categoryIdText);
-      }
+    CategoryOption selected = (CategoryOption) categoryCombo.getSelectedItem();
+    if (selected != null) {
+      data.put("categoryId", selected.getCategoryId());
     }
 
     data.put("description", descriptionArea.getText().trim());
+    data.put("quantity", Integer.parseInt(quantityField.getText().trim()));
     data.put("unitPrice", Double.parseDouble(unitPriceField.getText().trim()));
 
     String reorderText = reorderLevelField.getText().trim();

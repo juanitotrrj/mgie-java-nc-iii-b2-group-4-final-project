@@ -6,6 +6,8 @@ import com.group4.inventoryclient.api.ApiClient;
 import com.group4.inventoryclient.api.StockMovementApiClient;
 import com.group4.inventoryclient.ui.components.PaginatedTable;
 import com.group4.inventoryclient.ui.components.SearchFilterBar;
+import com.group4.inventoryclient.util.JsonFieldUtil;
+import com.group4.inventoryclient.util.PaginationUtil;
 import com.group4.inventoryclient.util.SwingUtil;
 import java.awt.BorderLayout;
 import javax.swing.JPanel;
@@ -45,36 +47,32 @@ public class StockMovementPanel extends JPanel {
                 if (response.isSuccess()) {
                   JsonArray data = response.getDataAsArray();
                   JsonObject meta = response.getMeta();
-                  int totalPages = meta != null ? meta.get("lastPage").getAsInt() : 1;
+                  int totalPages = PaginationUtil.totalPages(meta);
 
                   Object[][] rows = new Object[data.size()][6];
                   for (int i = 0; i < data.size(); i++) {
                     JsonObject item = data.get(i).getAsJsonObject();
-                    rows[i][0] = item.get("id").getAsLong();
-                    rows[i][1] =
-                        item.has("product") && !item.get("product").isJsonNull()
-                            ? item.getAsJsonObject("product").get("name").getAsString()
-                            : "N/A";
-                    rows[i][2] =
-                        item.has("movementType") && !item.get("movementType").isJsonNull()
-                            ? item.get("movementType").getAsString()
-                            : "N/A";
-                    rows[i][3] =
-                        item.has("quantity") && !item.get("quantity").isJsonNull()
-                            ? item.get("quantity").getAsInt()
-                            : 0;
-                    rows[i][4] =
-                        item.has("referenceType") && !item.get("referenceType").isJsonNull()
-                            ? item.get("referenceType").getAsString()
-                                + " #"
-                                + (item.has("referenceId") && !item.get("referenceId").isJsonNull()
-                                    ? item.get("referenceId").getAsLong()
-                                    : "N/A")
-                            : "N/A";
-                    rows[i][5] =
-                        item.has("movementDate") && !item.get("movementDate").isJsonNull()
-                            ? item.get("movementDate").getAsString()
-                            : "N/A";
+                    rows[i][0] = JsonFieldUtil.getLong(item, "stockMovementId", "id");
+                    rows[i][1] = JsonFieldUtil.getString(item, "N/A", "productName");
+                    if ("N/A".equals(rows[i][1])
+                        && item.has("product")
+                        && item.get("product").isJsonObject()) {
+                      rows[i][1] =
+                          JsonFieldUtil.getString(item.getAsJsonObject("product"), "N/A", "name");
+                    }
+                    rows[i][2] = JsonFieldUtil.getString(item, "N/A", "movementType");
+                    rows[i][3] = JsonFieldUtil.getInt(item, "quantityChange", "quantity");
+                    String referenceNo = JsonFieldUtil.getString(item, "", "referenceNo");
+                    String referenceType = JsonFieldUtil.getString(item, "", "referenceType");
+                    if (!referenceNo.isEmpty()) {
+                      rows[i][4] = referenceType + " " + referenceNo;
+                    } else if (!referenceType.isEmpty()) {
+                      long referenceId = JsonFieldUtil.getLong(item, "referenceId");
+                      rows[i][4] = referenceType + " #" + referenceId;
+                    } else {
+                      rows[i][4] = "N/A";
+                    }
+                    rows[i][5] = JsonFieldUtil.getString(item, "N/A", "createdAt", "movementDate");
                   }
                   SwingUtilities.invokeLater(() -> table.setData(rows, page, totalPages));
                 } else {

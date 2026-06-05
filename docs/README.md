@@ -2,6 +2,9 @@
 
 Technical and operational documentation for the Group 4 Inventory Management System monorepo.
 
+![Coverage](https://img.shields.io/badge/coverage-80%25%20lines%20%7C%2070%25%20branches-blue)
+*(Run `mvn verify -Pcoverage-check -pl inventory-server` locally to refresh; badge reflects enforced JaCoCo gate.)*
+
 ## Applications
 
 | Application | Directory | Description |
@@ -19,6 +22,7 @@ Technical and operational documentation for the Group 4 Inventory Management Sys
 | [DEVELOPMENT.md](DEVELOPMENT.md) | Developer workstation setup (Windows, macOS, Linux), IDE, MySQL, conventions |
 | [BUILD.md](BUILD.md) | Maven build commands for server and client |
 | [RUN.md](RUN.md) | How to start server and client, CLI commands, health checks, troubleshooting |
+| [TESTING.md](TESTING.md) | Automated test pyramid hub (unit → load), JaCoCo coverage, scripts, CI profiles |
 | [USER_GUIDE.md](USER_GUIDE.md) | End-user instructions: setup wizard, guest mode, login, modules by role |
 
 ### Server
@@ -36,6 +40,24 @@ Technical and operational documentation for the Group 4 Inventory Management Sys
 | Document | Contents |
 |----------|----------|
 | [client/TECHNICAL.md](client/TECHNICAL.md) | Swing architecture, packages, API layer, session, UI flow |
+
+## Code coverage
+
+JaCoCo reports are generated when running server unit tests:
+
+```bash
+mvn test -pl inventory-server
+open inventory-server/target/site/jacoco/index.html   # macOS
+xdg-open inventory-server/target/site/jacoco/index.html   # Linux
+```
+
+Enforce project thresholds (80% lines, 70% branches):
+
+```bash
+mvn verify -Pcoverage-check -pl inventory-server
+```
+
+See [TESTING.md](TESTING.md#jacoco-coverage) for profile details.
 
 ## Quick Start (local)
 

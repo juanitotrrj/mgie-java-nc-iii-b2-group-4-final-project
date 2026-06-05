@@ -38,8 +38,8 @@ public class Main {
                 ApiClient.ApiResponse response = apiClient.get("/setup/status");
                 if (response.isSuccess()) {
                   String state =
-                      response.getDataAsObject().has("setupState")
-                          ? response.getDataAsObject().get("setupState").getAsString()
+                      response.getDataAsObject().has("state")
+                          ? response.getDataAsObject().get("state").getAsString()
                           : "UNKNOWN";
                   SwingUtilities.invokeLater(
                       () -> {

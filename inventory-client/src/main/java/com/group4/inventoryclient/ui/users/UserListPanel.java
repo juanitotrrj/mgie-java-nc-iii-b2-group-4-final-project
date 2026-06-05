@@ -48,8 +48,7 @@ public class UserListPanel extends JPanel {
     deactivateBtn = new JButton("Deactivate");
     resetPasswordBtn = new JButton("Reset Password");
     refreshBtn = new JButton("Refresh");
-    ExportButton exportBtn =
-        new ExportButton(apiClient, "/exports/resources?type=users&format=csv", this);
+    ExportButton exportBtn = new ExportButton(apiClient, "/users/export?format=csv", this);
 
     JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
     toolbar.add(addBtn);

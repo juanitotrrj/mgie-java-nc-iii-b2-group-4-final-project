@@ -8,6 +8,8 @@ import com.group4.inventoryclient.api.SupplierApiClient;
 import com.group4.inventoryclient.ui.components.ExportButton;
 import com.group4.inventoryclient.ui.components.PaginatedTable;
 import com.group4.inventoryclient.ui.components.SearchFilterBar;
+import com.group4.inventoryclient.util.JsonFieldUtil;
+import com.group4.inventoryclient.util.PaginationUtil;
 import com.group4.inventoryclient.util.SwingUtil;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -54,7 +56,7 @@ public class SupplierListPanel extends JPanel {
     deleteBtn = new JButton("Delete");
     refreshBtn = new JButton("Refresh");
     ExportButton exportBtn =
-        new ExportButton(apiClient, "/exports/resources?type=suppliers&format=csv", parentFrame);
+        new ExportButton(apiClient, "/suppliers/export?format=csv", parentFrame);
 
     addBtn.addActionListener(e -> handleAdd());
     editBtn.addActionListener(e -> handleEdit());
@@ -88,19 +90,18 @@ public class SupplierListPanel extends JPanel {
 
                 JsonArray data = response.getDataAsArray();
                 JsonObject meta = response.getMeta();
-                int totalPages =
-                    meta != null && meta.has("totalPages") ? meta.get("totalPages").getAsInt() : 1;
+                int totalPages = PaginationUtil.totalPages(meta);
 
                 Object[][] rows = new Object[data.size()][6];
                 int i = 0;
                 for (JsonElement el : data) {
                   JsonObject supplier = el.getAsJsonObject();
-                  rows[i][0] = getOrDefault(supplier, "id", "");
-                  rows[i][1] = getOrDefault(supplier, "name", "");
-                  rows[i][2] = getOrDefault(supplier, "contactPerson", "");
-                  rows[i][3] = getOrDefault(supplier, "phone", "");
-                  rows[i][4] = getOrDefault(supplier, "email", "");
-                  rows[i][5] = getOrDefault(supplier, "status", "");
+                  rows[i][0] = JsonFieldUtil.getLong(supplier, "supplierId", "id");
+                  rows[i][1] = JsonFieldUtil.getString(supplier, "", "supplierName", "name");
+                  rows[i][2] = JsonFieldUtil.getString(supplier, "", "contactPerson");
+                  rows[i][3] = JsonFieldUtil.getString(supplier, "", "phone");
+                  rows[i][4] = JsonFieldUtil.getString(supplier, "", "email");
+                  rows[i][5] = JsonFieldUtil.getString(supplier, "", "status");
                   i++;
                 }
 
@@ -226,9 +227,5 @@ public class SupplierListPanel extends JPanel {
               })
           .start();
     }
-  }
-
-  private String getOrDefault(JsonObject obj, String key, String defaultValue) {
-    return obj.has(key) ? obj.get(key).getAsString() : defaultValue;
   }
 }

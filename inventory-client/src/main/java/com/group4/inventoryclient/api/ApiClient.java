@@ -43,19 +43,23 @@ public class ApiClient {
   }
 
   public ApiResponse delete(String path) throws IOException {
-    return request("DELETE", path, null);
+    return executeRequest("DELETE", path, null);
   }
 
   public ApiResponse get(String path) throws IOException {
-    return request("GET", path, null);
+    return executeRequest("GET", path, null);
   }
 
   public ApiResponse post(String path, Object body) throws IOException {
-    return request("POST", path, body);
+    return executeRequest("POST", path, body);
   }
 
   public ApiResponse put(String path, Object body) throws IOException {
-    return request("PUT", path, body);
+    return executeRequest("PUT", path, body);
+  }
+
+  protected ApiResponse executeRequest(String method, String path, Object body) throws IOException {
+    return request(method, path, body);
   }
 
   private ApiResponse request(String method, String path, Object body) throws IOException {

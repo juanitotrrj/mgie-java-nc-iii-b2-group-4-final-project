@@ -15,6 +15,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -24,6 +25,10 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 
 public class GuestFrame extends JFrame {
+
+  private static final String[] LOGIN_ROLES = {
+    "Administrator", "Manager", "Inventory Clerk", "Cashier"
+  };
 
   private final ApiClient apiClient;
   private final CardLayout cardLayout = new CardLayout();
@@ -207,6 +212,7 @@ public class GuestFrame extends JFrame {
 
     JTextField usernameField = new JTextField(20);
     JPasswordField passwordField = new JPasswordField(20);
+    JComboBox<String> roleField = new JComboBox<>(LOGIN_ROLES);
 
     int row = 0;
     gbc.gridx = 0;
@@ -232,27 +238,39 @@ public class GuestFrame extends JFrame {
     p.add(passwordField, gbc);
 
     row++;
+    gbc.gridx = 0;
+    gbc.gridy = row;
+    p.add(new JLabel("Role:"), gbc);
+    gbc.gridx = 1;
+    p.add(roleField, gbc);
+
+    row++;
     gbc.gridx = 1;
     gbc.gridy = row;
     JButton loginBtn = new JButton("Login");
-    loginBtn.addActionListener(e -> performLogin(usernameField, passwordField));
+    loginBtn.addActionListener(
+        e -> performLogin(usernameField, passwordField, (String) roleField.getSelectedItem()));
     p.add(loginBtn, gbc);
 
     return p;
   }
 
-  private void performLogin(JTextField usernameField, JPasswordField passwordField) {
+  private void performLogin(JTextField usernameField, JPasswordField passwordField, String role) {
     String username = usernameField.getText().trim();
     String password = new String(passwordField.getPassword());
     if (username.isEmpty() || password.isEmpty()) {
       SwingUtil.showError(this, "Username and password are required.");
       return;
     }
+    if (role == null || role.trim().isEmpty()) {
+      SwingUtil.showError(this, "Role is required.");
+      return;
+    }
     new Thread(
             () -> {
               try {
                 AuthApiClient auth = new AuthApiClient(apiClient);
-                JsonObject data = auth.login(username, password);
+                JsonObject data = auth.login(username, password, role);
                 apiClient.setBearerToken(data.get("token").getAsString());
                 SessionManager.getInstance().login(data);
                 SwingUtilities.invokeLater(

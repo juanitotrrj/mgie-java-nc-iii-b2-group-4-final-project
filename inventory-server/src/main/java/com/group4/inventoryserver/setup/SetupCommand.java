@@ -24,7 +24,11 @@ public class SetupCommand {
   private final Map<String, String> envValues = new LinkedHashMap<>();
 
   public SetupCommand() {
-    this.scanner = new Scanner(System.in, "UTF-8");
+    this(new Scanner(System.in, "UTF-8"));
+  }
+
+  SetupCommand(Scanner scanner) {
+    this.scanner = scanner;
   }
 
   public void run() {

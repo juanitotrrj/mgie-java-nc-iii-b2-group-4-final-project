@@ -278,8 +278,12 @@ public class ProductRepository {
       StringBuilder sql, List<Object> params, String search, Long categoryId, String status) {
     List<String> conditions = new ArrayList<>();
     if (search != null && !search.trim().isEmpty()) {
-      conditions.add("(p.product_code LIKE ? OR p.product_name LIKE ?)");
+      conditions.add(
+          "(p.product_code LIKE ? OR p.product_name LIKE ? OR c.category_name LIKE ? "
+              + "OR s.supplier_name LIKE ?)");
       String pattern = "%" + search.trim() + "%";
+      params.add(pattern);
+      params.add(pattern);
       params.add(pattern);
       params.add(pattern);
     }

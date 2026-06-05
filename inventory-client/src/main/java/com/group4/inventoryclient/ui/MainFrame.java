@@ -85,13 +85,14 @@ public class MainFrame extends JFrame {
     if (session.hasPermission("SUPPLIER_READ")) navModel.addElement("Suppliers");
     if (session.hasPermission("PURCHASE_READ")) navModel.addElement("Purchases");
     if (session.hasPermission("SALE_READ")) navModel.addElement("Sales");
-    if (session.hasPermission("ICR_READ") || session.hasPermission("ICR_CREATE"))
+    if (session.hasPermission("INVENTORY_CHANGE_REQUEST_CREATE")
+        || session.hasPermission("INVENTORY_CHANGE_REQUEST_REVIEW"))
       navModel.addElement("Change Requests");
-    if (session.hasPermission("STOCK_READ")) navModel.addElement("Stock Movements");
+    if (session.hasPermission("STOCK_MOVEMENT_READ")) navModel.addElement("Stock Movements");
     if (session.hasPermission("REPORT_READ")) navModel.addElement("Reports");
-    if (session.hasPermission("USER_READ")) navModel.addElement("Users");
+    if (session.hasPermission("USER_MANAGE")) navModel.addElement("Users");
     if (session.hasPermission("SETTINGS_MANAGE")) navModel.addElement("Settings");
-    if (session.hasPermission("AUDIT_READ")) navModel.addElement("Audit Logs");
+    if (session.hasPermission("AUDIT_LOG_READ")) navModel.addElement("Audit Logs");
 
     navList.setFont(navList.getFont().deriveFont(13f));
     navList.addListSelectionListener(

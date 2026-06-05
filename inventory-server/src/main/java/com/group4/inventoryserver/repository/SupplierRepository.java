@@ -276,8 +276,12 @@ public class SupplierRepository {
     List<String> conditions = new ArrayList<>();
     if (search != null && !search.trim().isEmpty()) {
       conditions.add(
-          "(s.supplier_code LIKE ? OR s.supplier_name LIKE ? OR s.contact_person LIKE ?)");
+          "(s.supplier_code LIKE ? OR s.supplier_name LIKE ? OR s.contact_person LIKE ? "
+              + "OR s.phone LIKE ? OR s.email LIKE ? OR s.address LIKE ?)");
       String pattern = "%" + search.trim() + "%";
+      params.add(pattern);
+      params.add(pattern);
+      params.add(pattern);
       params.add(pattern);
       params.add(pattern);
       params.add(pattern);

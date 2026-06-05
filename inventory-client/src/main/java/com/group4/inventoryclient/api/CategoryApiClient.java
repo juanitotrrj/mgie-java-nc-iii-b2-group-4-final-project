@@ -12,9 +12,18 @@ public class CategoryApiClient {
   }
 
   public ApiClient.ApiResponse list(int page, String search) throws IOException {
-    StringBuilder path = new StringBuilder("/categories?page=" + page);
+    return list(page, search, 10, null);
+  }
+
+  public ApiClient.ApiResponse list(int page, String search, int size, String status)
+      throws IOException {
+    StringBuilder path =
+        new StringBuilder("/categories?page=").append(page).append("&size=").append(size);
     if (search != null && !search.isEmpty()) {
       path.append("&search=").append(java.net.URLEncoder.encode(search, "UTF-8"));
+    }
+    if (status != null && !status.isEmpty() && !"All".equals(status)) {
+      path.append("&status=").append(java.net.URLEncoder.encode(status, "UTF-8"));
     }
     return client.get(path.toString());
   }

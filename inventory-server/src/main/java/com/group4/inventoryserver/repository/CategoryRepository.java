@@ -262,8 +262,9 @@ public class CategoryRepository {
       StringBuilder sql, List<Object> params, String search, String status, String type) {
     List<String> conditions = new ArrayList<>();
     if (search != null && !search.trim().isEmpty()) {
-      conditions.add("(c.category_code LIKE ? OR c.category_name LIKE ?)");
+      conditions.add("(c.category_code LIKE ? OR c.category_name LIKE ? OR c.description LIKE ?)");
       String pattern = "%" + search.trim() + "%";
+      params.add(pattern);
       params.add(pattern);
       params.add(pattern);
     }

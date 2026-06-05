@@ -7,6 +7,8 @@ import com.group4.inventoryclient.api.SaleApiClient;
 import com.group4.inventoryclient.ui.components.ExportButton;
 import com.group4.inventoryclient.ui.components.PaginatedTable;
 import com.group4.inventoryclient.ui.components.SearchFilterBar;
+import com.group4.inventoryclient.util.JsonFieldUtil;
+import com.group4.inventoryclient.util.PaginationUtil;
 import com.group4.inventoryclient.util.SwingUtil;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
@@ -53,7 +55,7 @@ public class SaleListPanel extends JPanel {
     toolbar.add(viewReceiptBtn);
     toolbar.add(cancelBtn);
     toolbar.add(refreshBtn);
-    toolbar.add(new ExportButton(apiClient, "/exports/resources?type=sales&format=csv", this));
+    toolbar.add(new ExportButton(apiClient, "/sales/export?format=csv", this));
     add(toolbar, BorderLayout.SOUTH);
 
     table.setPageChangeListener(this::loadData);
@@ -76,32 +78,18 @@ public class SaleListPanel extends JPanel {
                 if (response.isSuccess()) {
                   JsonArray data = response.getDataAsArray();
                   JsonObject meta = response.getMeta();
-                  int totalPages = meta != null ? meta.get("lastPage").getAsInt() : 1;
+                  int totalPages = PaginationUtil.totalPages(meta);
 
                   Object[][] rows = new Object[data.size()][6];
                   for (int i = 0; i < data.size(); i++) {
                     JsonObject item = data.get(i).getAsJsonObject();
-                    rows[i][0] = item.get("id").getAsLong();
-                    rows[i][1] =
-                        item.has("customerName") && !item.get("customerName").isJsonNull()
-                            ? item.get("customerName").getAsString()
-                            : "Walk-in";
-                    rows[i][2] =
-                        item.has("saleDate") && !item.get("saleDate").isJsonNull()
-                            ? item.get("saleDate").getAsString()
-                            : "N/A";
-                    rows[i][3] =
-                        item.has("paymentMethod") && !item.get("paymentMethod").isJsonNull()
-                            ? item.get("paymentMethod").getAsString()
-                            : "N/A";
+                    rows[i][0] = JsonFieldUtil.getLong(item, "saleId", "id");
+                    rows[i][1] = JsonFieldUtil.getString(item, "Walk-in", "customerName");
+                    rows[i][2] = JsonFieldUtil.getString(item, "N/A", "saleDate");
+                    rows[i][3] = JsonFieldUtil.getString(item, "N/A", "paymentMethod");
                     rows[i][4] =
-                        item.has("totalAmount") && !item.get("totalAmount").isJsonNull()
-                            ? String.format("%.2f", item.get("totalAmount").getAsDouble())
-                            : "0.00";
-                    rows[i][5] =
-                        item.has("status") && !item.get("status").isJsonNull()
-                            ? item.get("status").getAsString()
-                            : "N/A";
+                        String.format("%.2f", JsonFieldUtil.getDouble(item, "totalAmount"));
+                    rows[i][5] = JsonFieldUtil.getString(item, "N/A", "status");
                   }
                   SwingUtilities.invokeLater(() -> table.setData(rows, page, totalPages));
                 } else {
