@@ -7,8 +7,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 public class SwaggerHandler extends BaseHandler {
 
@@ -17,6 +19,7 @@ public class SwaggerHandler extends BaseHandler {
   private static final String WEBJAR_VERSION = "5.17.14";
 
   private static final Map<String, String> MIME_TYPES = new HashMap<>();
+  private static final Pattern SERVERS_BLOCK = Pattern.compile("(?s)servers:\\n.*?(?=\\ntags:)");
 
   static {
     MIME_TYPES.put("html", "text/html; charset=UTF-8");
@@ -40,7 +43,7 @@ public class SwaggerHandler extends BaseHandler {
     if (pathParam == null || pathParam.isEmpty()) {
       serveIndex(ctx);
     } else if ("openapi.yaml".equals(pathParam)) {
-      serveResource(ctx, "/docs/openapi.yaml", "yaml");
+      serveOpenApi(ctx);
     } else if (pathParam.startsWith("assets/")) {
       String filename = pathParam.substring("assets/".length());
       serveSwaggerAsset(ctx, filename);
@@ -74,14 +77,60 @@ public class SwaggerHandler extends BaseHandler {
     sendBytes(ctx, content, contentType);
   }
 
-  private void serveResource(RequestContext ctx, String resourcePath, String ext)
-      throws IOException {
-    byte[] content = readClasspathResource(resourcePath);
-    if (content == null) {
-      throw new ApiException(404, "Resource not found.");
+  private void serveOpenApi(RequestContext ctx) throws IOException {
+    byte[] template = readClasspathResource("/docs/openapi.yaml");
+    if (template == null) {
+      throw new ApiException(404, "OpenAPI specification not found.");
     }
-    String contentType = MIME_TYPES.getOrDefault(ext, "application/octet-stream");
-    sendBytes(ctx, content, contentType);
+    String yaml = patchServersBlock(new String(template, StandardCharsets.UTF_8), ctx);
+    sendBytes(ctx, yaml.getBytes(StandardCharsets.UTF_8), MIME_TYPES.get("yaml"));
+  }
+
+  static String patchServersBlock(String yaml, RequestContext ctx) {
+    String origin = resolveServerOrigin(ctx);
+    String apiBase = resolveApiBaseUrl(origin);
+    String serversBlock =
+        "servers:\n"
+            + "- url: "
+            + origin
+            + "\n"
+            + "  description: Current backend server (from request Host or APP_BASE_URL)\n"
+            + "- url: "
+            + apiBase
+            + "\n"
+            + "  description: Current API base path\n";
+    return SERVERS_BLOCK.matcher(yaml).replaceFirst(serversBlock);
+  }
+
+  static String resolveServerOrigin(RequestContext ctx) {
+    String host = ctx.getHeader("Host");
+    if (host != null && !host.trim().isEmpty()) {
+      String scheme = ctx.getHeader("X-Forwarded-Proto");
+      if (scheme == null || scheme.trim().isEmpty()) {
+        scheme = "http";
+      }
+      return scheme.trim().toLowerCase() + "://" + host.trim();
+    }
+    return stripTrailingSlash(EnvConfig.appBaseUrl());
+  }
+
+  static String resolveApiBaseUrl(String origin) {
+    String contextPath = EnvConfig.appContextPath();
+    if (contextPath == null || contextPath.isEmpty() || "/".equals(contextPath)) {
+      return origin;
+    }
+    String normalizedContext = contextPath.startsWith("/") ? contextPath : "/" + contextPath;
+    if (origin.endsWith(normalizedContext)) {
+      return origin;
+    }
+    return origin + normalizedContext;
+  }
+
+  private static String stripTrailingSlash(String url) {
+    if (url == null || url.isEmpty()) {
+      return url;
+    }
+    return url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
   }
 
   private void sendBytes(RequestContext ctx, byte[] content, String contentType)

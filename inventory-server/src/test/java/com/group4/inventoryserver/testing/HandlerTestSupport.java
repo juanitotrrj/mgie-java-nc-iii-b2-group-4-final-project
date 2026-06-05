@@ -32,20 +32,35 @@ public final class HandlerTestSupport {
   }
 
   public static RequestContext context(String method, String path) throws IOException {
-    return context(method, path, null, null);
+    return context(method, path, null, null, null);
+  }
+
+  public static RequestContext contextWithHost(String method, String path, String hostHeader)
+      throws IOException {
+    return context(method, path, null, null, hostHeader);
   }
 
   public static RequestContext context(String method, String path, String jsonBody)
       throws IOException {
-    return context(method, path, jsonBody, null);
+    return context(method, path, jsonBody, null, null);
   }
 
   public static RequestContext context(
       String method, String path, String jsonBody, Set<String> permissions) throws IOException {
+    return context(method, path, jsonBody, permissions, null);
+  }
+
+  public static RequestContext context(
+      String method, String path, String jsonBody, Set<String> permissions, String hostHeader)
+      throws IOException {
     HttpExchange exchange = mock(HttpExchange.class);
     when(exchange.getRequestMethod()).thenReturn(method);
     when(exchange.getRequestURI()).thenReturn(URI.create(path));
-    when(exchange.getRequestHeaders()).thenReturn(new Headers());
+    Headers requestHeaders = new Headers();
+    if (hostHeader != null && !hostHeader.isEmpty()) {
+      requestHeaders.add("Host", hostHeader);
+    }
+    when(exchange.getRequestHeaders()).thenReturn(requestHeaders);
     when(exchange.getResponseHeaders()).thenReturn(new Headers());
     when(exchange.getRemoteAddress()).thenReturn(new InetSocketAddress("127.0.0.1", 12345));
 

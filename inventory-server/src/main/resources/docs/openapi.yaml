@@ -16,11 +16,12 @@ info:
     This contract is designed for Swagger API Explorer / Swagger UI testing.
 
     '
+# servers block is replaced at runtime from APP_BASE_URL / request Host (see SwaggerHandler)
 servers:
 - url: http://localhost:8080
-  description: Local Java SE 8 backend server
+  description: Placeholder — overridden when served via /api/docs/openapi.yaml
 - url: http://localhost:8080/api
-  description: Local API base path if mounted directly under /api
+  description: Placeholder — overridden when served via /api/docs/openapi.yaml
 tags:
 - name: System
   description: Server health and connectivity endpoints.
