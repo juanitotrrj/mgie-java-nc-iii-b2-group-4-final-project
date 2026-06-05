@@ -53,7 +53,7 @@ public class SaleListPanel extends JPanel {
     toolbar.add(viewReceiptBtn);
     toolbar.add(cancelBtn);
     toolbar.add(refreshBtn);
-    toolbar.add(new ExportButton(apiClient, "/exports/resources?type=sales&format=csv", this));
+    toolbar.add(new ExportButton(apiClient, "/sales/export?format=csv", this));
     add(toolbar, BorderLayout.SOUTH);
 
     table.setPageChangeListener(this::loadData);

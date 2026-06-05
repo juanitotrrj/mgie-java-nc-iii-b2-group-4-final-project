@@ -89,6 +89,10 @@ public class SessionManager {
     return fullName;
   }
 
+  public String getEmail() {
+    return email;
+  }
+
   public long getUserId() {
     return userId;
   }

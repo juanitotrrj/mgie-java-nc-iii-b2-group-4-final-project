@@ -54,7 +54,7 @@ public class SupplierListPanel extends JPanel {
     deleteBtn = new JButton("Delete");
     refreshBtn = new JButton("Refresh");
     ExportButton exportBtn =
-        new ExportButton(apiClient, "/exports/resources?type=suppliers&format=csv", parentFrame);
+        new ExportButton(apiClient, "/suppliers/export?format=csv", parentFrame);
 
     addBtn.addActionListener(e -> handleAdd());
     editBtn.addActionListener(e -> handleEdit());

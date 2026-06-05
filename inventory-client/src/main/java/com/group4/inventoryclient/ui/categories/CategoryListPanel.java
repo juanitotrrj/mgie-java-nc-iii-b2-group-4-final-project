@@ -52,7 +52,7 @@ public class CategoryListPanel extends JPanel {
     deleteBtn = new JButton("Delete");
     refreshBtn = new JButton("Refresh");
     ExportButton exportBtn =
-        new ExportButton(apiClient, "/exports/resources?type=categories&format=csv", parentFrame);
+        new ExportButton(apiClient, "/categories/export?format=csv", parentFrame);
 
     addBtn.addActionListener(e -> handleAdd());
     editBtn.addActionListener(e -> handleEdit());

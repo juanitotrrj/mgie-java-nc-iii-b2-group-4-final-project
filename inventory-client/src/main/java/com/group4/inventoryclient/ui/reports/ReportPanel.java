@@ -113,10 +113,10 @@ public class ReportPanel extends JPanel {
     if (exportBtn != null) {
       remove(exportBtn.getParent());
     }
-    String type = typeCombo.getSelectedItem().toString().replace(" ", "_").toUpperCase();
+    String reportType = toReportTypeKey(typeCombo.getSelectedItem().toString());
     String dateFrom = dateFromField.getText().trim();
     String dateTo = dateToField.getText().trim();
-    String exportPath = "/reports/export?type=" + type + "&format=csv";
+    String exportPath = "/reports/export?reportType=" + reportType + "&format=csv";
     if (!dateFrom.isEmpty()) {
       exportPath += "&dateFrom=" + dateFrom;
     }
@@ -129,5 +129,22 @@ public class ReportPanel extends JPanel {
     bottomPanel.add(exportBtn);
     add(bottomPanel, BorderLayout.SOUTH);
     revalidate();
+  }
+
+  private static String toReportTypeKey(String label) {
+    switch (label) {
+      case "Sales Summary":
+        return "sales-summary";
+      case "Inventory Value":
+        return "inventory-value";
+      case "Purchase Cost":
+        return "purchase-cost";
+      case "Low Stock":
+        return "low-stock";
+      case "Top Selling":
+        return "top-selling-products";
+      default:
+        return label.toLowerCase().replace(' ', '-');
+    }
   }
 }

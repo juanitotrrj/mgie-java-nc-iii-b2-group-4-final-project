@@ -51,7 +51,7 @@ public class PurchaseListPanel extends JPanel {
     toolbar.add(receiveBtn);
     toolbar.add(cancelBtn);
     toolbar.add(refreshBtn);
-    toolbar.add(new ExportButton(apiClient, "/exports/resources?type=purchases&format=csv", this));
+    toolbar.add(new ExportButton(apiClient, "/purchases/export?format=csv", this));
     add(toolbar, BorderLayout.SOUTH);
 
     table.setPageChangeListener(this::loadData);

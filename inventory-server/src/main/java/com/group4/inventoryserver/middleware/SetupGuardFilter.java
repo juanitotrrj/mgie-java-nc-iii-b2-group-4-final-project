@@ -16,9 +16,17 @@ public class SetupGuardFilter extends Filter {
   private static final Set<String> ALLOWED_DURING_SETUP =
       new HashSet<>(Arrays.asList("/api/health", "/api/setup", "/api/docs"));
 
-  private final SystemInstallationRepository installationRepo = new SystemInstallationRepository();
+  private final SystemInstallationRepository installationRepo;
   private volatile String cachedState;
   private volatile long lastFetchTime;
+
+  public SetupGuardFilter() {
+    this(new SystemInstallationRepository());
+  }
+
+  SetupGuardFilter(SystemInstallationRepository installationRepo) {
+    this.installationRepo = installationRepo;
+  }
 
   @Override
   public void doFilter(HttpExchange exchange, Chain chain) throws IOException {
