@@ -39,15 +39,25 @@ public class SupplierFormDialog extends FormDialog {
     addField("Status", statusCombo);
 
     if (supplier != null) {
-      if (supplier.has("name")) nameField.setText(supplier.get("name").getAsString());
-      if (supplier.has("contactPerson"))
+      if (supplier.has("supplierName")) {
+        nameField.setText(supplier.get("supplierName").getAsString());
+      } else if (supplier.has("name")) {
+        nameField.setText(supplier.get("name").getAsString());
+      }
+      if (supplier.has("contactPerson")) {
         contactPersonField.setText(supplier.get("contactPerson").getAsString());
-      if (supplier.has("phone")) phoneField.setText(supplier.get("phone").getAsString());
-      if (supplier.has("email")) emailField.setText(supplier.get("email").getAsString());
-      if (supplier.has("address")) addressArea.setText(supplier.get("address").getAsString());
+      }
+      if (supplier.has("phone")) {
+        phoneField.setText(supplier.get("phone").getAsString());
+      }
+      if (supplier.has("email")) {
+        emailField.setText(supplier.get("email").getAsString());
+      }
+      if (supplier.has("address")) {
+        addressArea.setText(supplier.get("address").getAsString());
+      }
       if (supplier.has("status")) {
-        String status = supplier.get("status").getAsString();
-        statusCombo.setSelectedItem(status);
+        statusCombo.setSelectedItem(supplier.get("status").getAsString());
       }
     }
   }
@@ -78,7 +88,7 @@ public class SupplierFormDialog extends FormDialog {
 
   public Map<String, Object> getFormData() {
     Map<String, Object> data = new HashMap<>();
-    data.put("name", nameField.getText().trim());
+    data.put("supplierName", nameField.getText().trim());
     data.put("contactPerson", contactPersonField.getText().trim());
     data.put("phone", phoneField.getText().trim());
     data.put("email", emailField.getText().trim());

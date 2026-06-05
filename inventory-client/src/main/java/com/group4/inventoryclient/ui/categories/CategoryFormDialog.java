@@ -30,12 +30,16 @@ public class CategoryFormDialog extends FormDialog {
     addField("Status", statusCombo);
 
     if (category != null) {
-      if (category.has("name")) nameField.setText(category.get("name").getAsString());
-      if (category.has("description"))
+      if (category.has("categoryName")) {
+        nameField.setText(category.get("categoryName").getAsString());
+      } else if (category.has("name")) {
+        nameField.setText(category.get("name").getAsString());
+      }
+      if (category.has("description")) {
         descriptionArea.setText(category.get("description").getAsString());
+      }
       if (category.has("status")) {
-        String status = category.get("status").getAsString();
-        statusCombo.setSelectedItem(status);
+        statusCombo.setSelectedItem(category.get("status").getAsString());
       }
     }
   }
@@ -52,7 +56,7 @@ public class CategoryFormDialog extends FormDialog {
 
   public Map<String, Object> getFormData() {
     Map<String, Object> data = new HashMap<>();
-    data.put("name", nameField.getText().trim());
+    data.put("categoryName", nameField.getText().trim());
     data.put("description", descriptionArea.getText().trim());
     data.put("status", statusCombo.getSelectedItem().toString());
     return data;
