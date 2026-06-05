@@ -13,10 +13,11 @@ public class AuthApiClient {
     this.client = client;
   }
 
-  public JsonObject login(String username, String password) throws IOException {
+  public JsonObject login(String username, String password, String role) throws IOException {
     Map<String, String> body = new HashMap<>();
     body.put("username", username);
     body.put("password", password);
+    body.put("role", role);
     ApiClient.ApiResponse response = client.post("/auth/login", body);
     if (!response.isSuccess()) {
       throw new IOException(response.getErrorMessage());

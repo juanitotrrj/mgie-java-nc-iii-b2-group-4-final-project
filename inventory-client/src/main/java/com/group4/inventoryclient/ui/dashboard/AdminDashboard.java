@@ -84,21 +84,50 @@ public class AdminDashboard extends JPanel {
   }
 
   private void updateDashboard(JsonObject data) {
-    if (data.has("totalProducts")) {
-      totalProductsCard.updateValue(data.get("totalProducts").getAsString());
-    }
-    if (data.has("totalUsers")) {
-      totalUsersCard.updateValue(data.get("totalUsers").getAsString());
-    }
-    if (data.has("revenueToday")) {
-      revenueTodayCard.updateValue("$" + data.get("revenueToday").getAsString());
-    }
-    if (data.has("pendingIcrs")) {
-      pendingIcrsCard.updateValue(data.get("pendingIcrs").getAsString());
+    if (data.has("cards")) {
+      for (JsonElement el : data.get("cards").getAsJsonArray()) {
+        JsonObject card = el.getAsJsonObject();
+        String label = getOrDefault(card, "label", "");
+        String value = getOrDefault(card, "value", "0");
+        switch (label) {
+          case "Total Products":
+            totalProductsCard.updateValue(value);
+            break;
+          case "Total Users":
+            totalUsersCard.updateValue(value);
+            break;
+          case "Today's Sales":
+            revenueTodayCard.updateValue("$" + value);
+            break;
+          case "Low Stock Items":
+            pendingIcrsCard.updateValue(value);
+            break;
+          default:
+            break;
+        }
+      }
+    } else {
+      if (data.has("totalProducts")) {
+        totalProductsCard.updateValue(data.get("totalProducts").getAsString());
+      }
+      if (data.has("totalUsers")) {
+        totalUsersCard.updateValue(data.get("totalUsers").getAsString());
+      }
+      if (data.has("revenueToday")) {
+        revenueTodayCard.updateValue("$" + data.get("revenueToday").getAsString());
+      }
+      if (data.has("pendingIcrs")) {
+        pendingIcrsCard.updateValue(data.get("pendingIcrs").getAsString());
+      }
     }
 
-    if (data.has("auditLogs")) {
-      JsonArray logs = data.get("auditLogs").getAsJsonArray();
+    JsonArray logs = null;
+    if (data.has("recentActivity")) {
+      logs = data.get("recentActivity").getAsJsonArray();
+    } else if (data.has("auditLogs")) {
+      logs = data.get("auditLogs").getAsJsonArray();
+    }
+    if (logs != null) {
       auditTableModel.setRowCount(0);
       int count = 0;
       for (JsonElement el : logs) {
@@ -106,10 +135,10 @@ public class AdminDashboard extends JPanel {
         JsonObject log = el.getAsJsonObject();
         auditTableModel.addRow(
             new Object[] {
-              getOrDefault(log, "timestamp", "N/A"),
-              getOrDefault(log, "user", "N/A"),
+              getOrDefault(log, "dateTime", getOrDefault(log, "timestamp", "N/A")),
+              getOrDefault(log, "username", getOrDefault(log, "user", "N/A")),
               getOrDefault(log, "action", "N/A"),
-              getOrDefault(log, "resource", "N/A")
+              getOrDefault(log, "module", getOrDefault(log, "resource", "N/A"))
             });
         count++;
       }

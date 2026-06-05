@@ -28,7 +28,7 @@ public class AuthApiClientTest {
   public void login_returnsDataOnSuccess() throws IOException {
     String body = "{\"data\":{\"token\":\"t1\",\"user\":{\"username\":\"admin\"}}}";
     when(apiClient.post(eq("/auth/login"), any())).thenReturn(new ApiClient.ApiResponse(200, body));
-    JsonObject data = authClient.login("admin", "secret");
+    JsonObject data = authClient.login("admin", "secret", "Administrator");
     assertThat(data.get("token").getAsString(), is("t1"));
     verify(apiClient).post(eq("/auth/login"), any());
   }
@@ -37,7 +37,7 @@ public class AuthApiClientTest {
   public void login_throwsOnFailure() throws IOException {
     when(apiClient.post(eq("/auth/login"), any()))
         .thenReturn(new ApiClient.ApiResponse(401, "{\"message\":\"Bad credentials\"}"));
-    authClient.login("admin", "wrong");
+    authClient.login("admin", "wrong", "Administrator");
   }
 
   @Test

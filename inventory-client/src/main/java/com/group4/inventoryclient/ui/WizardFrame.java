@@ -102,6 +102,8 @@ public class WizardFrame extends JFrame {
                             "System is already initialized.\n"
                                 + "The setup wizard is no longer needed.");
                         dispose();
+                        GuestFrame guest = new GuestFrame(apiClient);
+                        guest.setVisible(true);
                       });
                 }
               } catch (Exception e) {
