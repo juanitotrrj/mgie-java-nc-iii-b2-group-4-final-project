@@ -15,6 +15,8 @@ import com.group4.inventoryclient.util.SwingUtil;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Frame;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.BorderFactory;
@@ -43,7 +45,9 @@ public class ProductListPanel extends JPanel {
     setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
     searchBar = new SearchFilterBar();
-    searchBar.addFilter("Status", new String[] {"All", "Active", "Inactive"});
+    javax.swing.JComboBox<String> statusFilter =
+        searchBar.addFilter("Status", new String[] {"All", "Active", "Inactive"});
+    statusFilter.setSelectedItem("Active");
     searchBar.addFilter("Category", new String[] {"All"});
     searchBar.setSearchListener(query -> loadData());
     add(searchBar, BorderLayout.NORTH);
@@ -66,6 +70,18 @@ public class ProductListPanel extends JPanel {
     editBtn.addActionListener(e -> handleEdit());
     deleteBtn.addActionListener(e -> handleDelete());
     refreshBtn.addActionListener(e -> loadData());
+    for (JButton btn : new JButton[] {addBtn, editBtn, deleteBtn, refreshBtn}) {
+      btn.setFocusable(false);
+    }
+    MouseAdapter captureSelectedRow =
+        new MouseAdapter() {
+          @Override
+          public void mousePressed(MouseEvent e) {
+            table.captureSelectedRowIndex();
+          }
+        };
+    editBtn.addMouseListener(captureSelectedRow);
+    deleteBtn.addMouseListener(captureSelectedRow);
 
     toolbarPanel.add(addBtn);
     toolbarPanel.add(editBtn);
@@ -124,14 +140,20 @@ public class ProductListPanel extends JPanel {
   }
 
   private void handleEdit() {
-    int selectedRow = table.getSelectedRow();
+    int selectedRow = table.resolveSelectedRowIndex();
+    table.clearCapturedRowIndex();
     if (selectedRow < 0) {
-      SwingUtil.showError(this, "Please select a product to edit");
+      SwingUtil.showError(parentFrame, "Please select a product to edit");
       return;
     }
 
-    Object idObj = table.getTable().getValueAt(selectedRow, 0);
-    long id = Long.parseLong(idObj.toString());
+    long id;
+    try {
+      id = table.getLongValue(selectedRow, 0);
+    } catch (NumberFormatException e) {
+      SwingUtil.showError(parentFrame, "Invalid product selected");
+      return;
+    }
 
     new Thread(
             () -> {
@@ -153,41 +175,50 @@ public class ProductListPanel extends JPanel {
   }
 
   private void handleDelete() {
-    int selectedRow = table.getSelectedRow();
+    int selectedRow = table.resolveSelectedRowIndex();
+    table.clearCapturedRowIndex();
     if (selectedRow < 0) {
-      SwingUtil.showError(this, "Please select a product to delete");
+      SwingUtil.showError(parentFrame, "Please select a product to delete");
       return;
     }
 
-    Object idObj = table.getTable().getValueAt(selectedRow, 0);
-    String name = table.getTable().getValueAt(selectedRow, 1).toString();
+    long id;
+    String name;
+    try {
+      id = table.getLongValue(selectedRow, 0);
+      name = table.getStringValue(selectedRow, 1);
+    } catch (NumberFormatException e) {
+      SwingUtil.showError(parentFrame, "Invalid product selected");
+      return;
+    }
 
     int confirm =
         JOptionPane.showConfirmDialog(
-            this,
-            "Are you sure you want to delete product: " + name + "?",
-            "Confirm Delete",
+            parentFrame,
+            "Are you sure you want to deactivate product: " + name + "?",
+            "Confirm Deactivate",
             JOptionPane.YES_NO_OPTION);
 
-    if (confirm == JOptionPane.YES_OPTION) {
-      long id = Long.parseLong(idObj.toString());
-      new Thread(
-              () -> {
-                try {
-                  ApiClient.ApiResponse response = productApi.delete(id);
-                  if (response.isSuccess()) {
-                    SwingUtil.showInfo(this, "Product deleted successfully");
-                    SwingUtilities.invokeLater(this::loadData);
-                  } else {
-                    SwingUtil.showError(
-                        this, "Failed to delete product: " + response.getErrorMessage());
-                  }
-                } catch (Exception e) {
-                  SwingUtil.showError(this, "Error deleting product: " + e.getMessage());
-                }
-              })
-          .start();
+    if (confirm != JOptionPane.YES_OPTION) {
+      return;
     }
+
+    new Thread(
+            () -> {
+              try {
+                ApiClient.ApiResponse response = productApi.delete(id);
+                if (response.isSuccess()) {
+                  SwingUtil.showInfo(parentFrame, "Product deactivated successfully");
+                  SwingUtilities.invokeLater(this::loadData);
+                } else {
+                  SwingUtil.showError(
+                      parentFrame, "Failed to delete product: " + response.getErrorMessage());
+                }
+              } catch (Exception e) {
+                SwingUtil.showError(parentFrame, "Error deleting product: " + e.getMessage());
+              }
+            })
+        .start();
   }
 
   private void openProductForm(JsonObject product, Long productId) {

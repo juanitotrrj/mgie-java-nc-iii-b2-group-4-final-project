@@ -31,11 +31,11 @@ public class PurchaseApiClient {
   }
 
   public ApiClient.ApiResponse receive(long id, Map<String, Object> body) throws IOException {
-    return apiClient.put("/purchases/" + id + "/receive", body);
+    return apiClient.post("/purchases/" + id + "/receive", body);
   }
 
   public ApiClient.ApiResponse cancel(long id, Map<String, Object> body) throws IOException {
-    return apiClient.put("/purchases/" + id + "/cancel", body);
+    return apiClient.post("/purchases/" + id + "/cancel", body);
   }
 
   private String urlEncode(String value) {

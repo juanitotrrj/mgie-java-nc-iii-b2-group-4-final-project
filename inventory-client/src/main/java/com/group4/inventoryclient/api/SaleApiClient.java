@@ -31,7 +31,7 @@ public class SaleApiClient {
   }
 
   public ApiClient.ApiResponse cancel(long id, Map<String, Object> body) throws IOException {
-    return apiClient.put("/sales/" + id + "/cancel", body);
+    return apiClient.post("/sales/" + id + "/cancel", body);
   }
 
   private String urlEncode(String value) {

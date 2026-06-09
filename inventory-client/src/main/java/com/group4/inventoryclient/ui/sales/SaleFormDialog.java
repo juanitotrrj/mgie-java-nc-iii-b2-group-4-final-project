@@ -22,7 +22,7 @@ public class SaleFormDialog extends FormDialog {
 
   private final JTextField customerNameField = new JTextField(20);
   private final JComboBox<String> paymentMethodCombo =
-      new JComboBox<>(new String[] {"Cash", "Credit Card", "Debit Card"});
+      new JComboBox<>(new String[] {"Cash", "GCash", "Credit Card", "Bank Transfer", "E-Wallet"});
   private final DefaultTableModel itemsModel =
       new DefaultTableModel(new String[] {"Product ID", "Qty", "Unit Price"}, 0);
   private final JTable itemsTable = new JTable(itemsModel);
@@ -134,7 +134,6 @@ public class SaleFormDialog extends FormDialog {
       Map<String, Object> item = new HashMap<>();
       item.put("productId", Long.parseLong(itemsModel.getValueAt(i, 0).toString().trim()));
       item.put("quantity", Integer.parseInt(itemsModel.getValueAt(i, 1).toString().trim()));
-      item.put("unitPrice", Double.parseDouble(itemsModel.getValueAt(i, 2).toString().trim()));
       items.add(item);
     }
     data.put("items", items);

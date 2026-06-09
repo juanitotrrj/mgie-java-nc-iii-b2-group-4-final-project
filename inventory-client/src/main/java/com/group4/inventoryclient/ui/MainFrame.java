@@ -140,7 +140,7 @@ public class MainFrame extends JFrame {
     contentPanel.add(new IcrListPanel(apiClient, this), "Change Requests");
     contentPanel.add(new StockMovementPanel(apiClient), "Stock Movements");
     contentPanel.add(new ReportPanel(apiClient), "Reports");
-    contentPanel.add(new UserListPanel(apiClient), "Users");
+    contentPanel.add(new UserListPanel(apiClient, this), "Users");
     contentPanel.add(new SettingsPanel(apiClient), "Settings");
     contentPanel.add(new AuditLogPanel(apiClient), "Audit Logs");
   }

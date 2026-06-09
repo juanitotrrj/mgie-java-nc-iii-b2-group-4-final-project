@@ -31,11 +31,11 @@ public class IcrApiClient {
   }
 
   public ApiClient.ApiResponse approve(long id, Map<String, Object> body) throws IOException {
-    return apiClient.put("/inventory-change-requests/" + id + "/approve", body);
+    return apiClient.post("/inventory-change-requests/" + id + "/approve", body);
   }
 
   public ApiClient.ApiResponse reject(long id, Map<String, Object> body) throws IOException {
-    return apiClient.put("/inventory-change-requests/" + id + "/reject", body);
+    return apiClient.post("/inventory-change-requests/" + id + "/reject", body);
   }
 
   private String urlEncode(String value) {

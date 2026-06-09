@@ -292,8 +292,14 @@ public class ProductRepository {
       params.add(categoryId);
     }
     if (status != null && !status.trim().isEmpty()) {
-      conditions.add("p.status = ?");
-      params.add(status);
+      if ("Active".equalsIgnoreCase(status)) {
+        conditions.add("p.status <> 'Inactive'");
+      } else if ("Inactive".equalsIgnoreCase(status)) {
+        conditions.add("p.status = 'Inactive'");
+      } else {
+        conditions.add("p.status = ?");
+        params.add(status);
+      }
     }
     if (!conditions.isEmpty()) {
       sql.append(" WHERE ").append(join(conditions, " AND "));

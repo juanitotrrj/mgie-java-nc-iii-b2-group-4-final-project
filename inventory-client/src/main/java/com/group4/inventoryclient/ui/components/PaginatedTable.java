@@ -19,6 +19,7 @@ public class PaginatedTable extends JPanel {
   private final JButton nextBtn = new JButton("Next >");
   private int currentPage = 1;
   private int totalPages = 1;
+  private int capturedRowIndex = -1;
   private PageChangeListener pageChangeListener;
 
   public PaginatedTable(String[] columns) {
@@ -62,6 +63,7 @@ public class PaginatedTable extends JPanel {
     for (Object[] row : rows) {
       tableModel.addRow(row);
     }
+    capturedRowIndex = -1;
     this.currentPage = page;
     this.totalPages = Math.max(1, totalPagesCount);
     pageLabel.setText("Page " + currentPage + " of " + totalPages);
@@ -78,7 +80,50 @@ public class PaginatedTable extends JPanel {
   }
 
   public int getSelectedRow() {
-    return table.getSelectedRow();
+    return getSelectedRowIndex();
+  }
+
+  public int getSelectedRowIndex() {
+    int row = table.getSelectedRow();
+    if (row >= 0) {
+      return row;
+    }
+    row = table.getSelectionModel().getLeadSelectionIndex();
+    if (row >= 0 && row < tableModel.getRowCount()) {
+      return row;
+    }
+    return -1;
+  }
+
+  public void captureSelectedRowIndex() {
+    capturedRowIndex = getSelectedRowIndex();
+  }
+
+  public int resolveSelectedRowIndex() {
+    if (capturedRowIndex >= 0 && capturedRowIndex < tableModel.getRowCount()) {
+      return capturedRowIndex;
+    }
+    return getSelectedRowIndex();
+  }
+
+  public void clearCapturedRowIndex() {
+    capturedRowIndex = -1;
+  }
+
+  public long getLongValue(int row, int column) {
+    Object value = tableModel.getValueAt(row, column);
+    if (value instanceof Number) {
+      return ((Number) value).longValue();
+    }
+    if (value == null) {
+      throw new NumberFormatException("Missing value in column " + column);
+    }
+    return Long.parseLong(value.toString().trim());
+  }
+
+  public String getStringValue(int row, int column) {
+    Object value = tableModel.getValueAt(row, column);
+    return value != null ? value.toString() : "";
   }
 
   public int getCurrentPage() {
