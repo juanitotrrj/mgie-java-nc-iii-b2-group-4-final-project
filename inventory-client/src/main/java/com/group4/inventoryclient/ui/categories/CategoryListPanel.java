@@ -14,6 +14,8 @@ import com.group4.inventoryclient.util.SwingUtil;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Frame;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
@@ -60,6 +62,18 @@ public class CategoryListPanel extends JPanel {
     editBtn.addActionListener(e -> handleEdit());
     deleteBtn.addActionListener(e -> handleDelete());
     refreshBtn.addActionListener(e -> loadData());
+    for (JButton btn : new JButton[] {addBtn, editBtn, deleteBtn, refreshBtn}) {
+      btn.setFocusable(false);
+    }
+    MouseAdapter captureSelectedRow =
+        new MouseAdapter() {
+          @Override
+          public void mousePressed(MouseEvent e) {
+            table.captureSelectedRowIndex();
+          }
+        };
+    editBtn.addMouseListener(captureSelectedRow);
+    deleteBtn.addMouseListener(captureSelectedRow);
 
     toolbarPanel.add(addBtn);
     toolbarPanel.add(editBtn);
@@ -133,14 +147,20 @@ public class CategoryListPanel extends JPanel {
   }
 
   private void handleEdit() {
-    int selectedRow = table.getSelectedRow();
+    int selectedRow = table.resolveSelectedRowIndex();
+    table.clearCapturedRowIndex();
     if (selectedRow < 0) {
       SwingUtil.showError(this, "Please select a category to edit");
       return;
     }
 
-    Object idObj = table.getTable().getValueAt(selectedRow, 0);
-    long id = Long.parseLong(idObj.toString());
+    long id;
+    try {
+      id = table.getLongValue(selectedRow, 0);
+    } catch (NumberFormatException e) {
+      SwingUtil.showError(this, "Invalid category selected");
+      return;
+    }
 
     new Thread(
             () -> {
@@ -188,14 +208,22 @@ public class CategoryListPanel extends JPanel {
   }
 
   private void handleDelete() {
-    int selectedRow = table.getSelectedRow();
+    int selectedRow = table.resolveSelectedRowIndex();
+    table.clearCapturedRowIndex();
     if (selectedRow < 0) {
       SwingUtil.showError(this, "Please select a category to delete");
       return;
     }
 
-    Object idObj = table.getTable().getValueAt(selectedRow, 0);
-    String name = table.getTable().getValueAt(selectedRow, 1).toString();
+    long id;
+    String name;
+    try {
+      id = table.getLongValue(selectedRow, 0);
+      name = table.getStringValue(selectedRow, 1);
+    } catch (NumberFormatException e) {
+      SwingUtil.showError(this, "Invalid category selected");
+      return;
+    }
 
     int confirm =
         JOptionPane.showConfirmDialog(
@@ -205,7 +233,6 @@ public class CategoryListPanel extends JPanel {
             JOptionPane.YES_NO_OPTION);
 
     if (confirm == JOptionPane.YES_OPTION) {
-      long id = Long.parseLong(idObj.toString());
       new Thread(
               () -> {
                 try {

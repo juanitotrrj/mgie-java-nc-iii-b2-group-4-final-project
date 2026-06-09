@@ -13,6 +13,8 @@ import com.group4.inventoryclient.util.SwingUtil;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Frame;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JButton;
@@ -62,6 +64,18 @@ public class PurchaseListPanel extends JPanel {
     receiveBtn.addActionListener(e -> handleReceive());
     cancelBtn.addActionListener(e -> handleCancel());
     refreshBtn.addActionListener(e -> loadData(table.getCurrentPage()));
+    for (JButton btn : new JButton[] {addBtn, receiveBtn, cancelBtn, refreshBtn}) {
+      btn.setFocusable(false);
+    }
+    MouseAdapter captureSelectedRow =
+        new MouseAdapter() {
+          @Override
+          public void mousePressed(MouseEvent e) {
+            table.captureSelectedRowIndex();
+          }
+        };
+    receiveBtn.addMouseListener(captureSelectedRow);
+    cancelBtn.addMouseListener(captureSelectedRow);
 
     loadData(1);
   }
@@ -135,12 +149,19 @@ public class PurchaseListPanel extends JPanel {
   }
 
   private void handleReceive() {
-    int row = table.getSelectedRow();
+    int row = table.resolveSelectedRowIndex();
+    table.clearCapturedRowIndex();
     if (row == -1) {
       SwingUtil.showError(this, "Please select a purchase order");
       return;
     }
-    long id = (Long) table.getTable().getValueAt(row, 0);
+    long id;
+    try {
+      id = table.getLongValue(row, 0);
+    } catch (NumberFormatException e) {
+      SwingUtil.showError(this, "Invalid purchase order selected");
+      return;
+    }
     int confirm =
         JOptionPane.showConfirmDialog(
             this,
@@ -172,12 +193,19 @@ public class PurchaseListPanel extends JPanel {
   }
 
   private void handleCancel() {
-    int row = table.getSelectedRow();
+    int row = table.resolveSelectedRowIndex();
+    table.clearCapturedRowIndex();
     if (row == -1) {
       SwingUtil.showError(this, "Please select a purchase order");
       return;
     }
-    long id = (Long) table.getTable().getValueAt(row, 0);
+    long id;
+    try {
+      id = table.getLongValue(row, 0);
+    } catch (NumberFormatException e) {
+      SwingUtil.showError(this, "Invalid purchase order selected");
+      return;
+    }
     String reason =
         JOptionPane.showInputDialog(
             this, "Enter cancellation reason:", "Cancel Purchase", JOptionPane.PLAIN_MESSAGE);

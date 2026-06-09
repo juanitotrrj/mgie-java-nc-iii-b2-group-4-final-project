@@ -50,9 +50,9 @@ public class IcrApiClientTest {
     verify(apiClient).post("/inventory-change-requests", body);
 
     icrClient.approve(11L, body);
-    verify(apiClient).put("/inventory-change-requests/11/approve", body);
+    verify(apiClient).post("/inventory-change-requests/11/approve", body);
 
     icrClient.reject(11L, body);
-    verify(apiClient).put("/inventory-change-requests/11/reject", body);
+    verify(apiClient).post("/inventory-change-requests/11/reject", body);
   }
 }

@@ -39,10 +39,10 @@ public class UserApiClient {
   }
 
   public ApiClient.ApiResponse deactivate(long id) throws IOException {
-    return apiClient.put("/users/" + id + "/deactivate", null);
+    return apiClient.delete("/users/" + id);
   }
 
   public ApiClient.ApiResponse resetPassword(long id, Map<String, Object> body) throws IOException {
-    return apiClient.put("/users/" + id + "/reset-password", body);
+    return apiClient.post("/users/" + id + "/reset-password", body);
   }
 }

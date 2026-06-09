@@ -29,18 +29,17 @@ public class SaleApiClientTest {
   public void list_buildsQueryWithStatus() throws IOException {
     when(apiClient.get(any())).thenReturn(new ApiClient.ApiResponse(200, "{\"data\":[]}"));
     ArgumentCaptor<String> path = ArgumentCaptor.forClass(String.class);
-    saleClient.list(1, "receipt", "Completed");
+    saleClient.list(1, "receipt", "Paid");
     verify(apiClient).get(path.capture());
     assertThat(path.getValue(), containsString("/sales?page=1"));
     assertThat(path.getValue(), containsString("search=receipt"));
-    assertThat(path.getValue(), containsString("status=Completed"));
+    assertThat(path.getValue(), containsString("status=Paid"));
   }
 
   @Test
   public void get_create_cancel_useCorrectPaths() throws IOException {
     when(apiClient.get(any())).thenReturn(new ApiClient.ApiResponse(200, "{}"));
     when(apiClient.post(any(), any())).thenReturn(new ApiClient.ApiResponse(201, "{}"));
-    when(apiClient.put(any(), any())).thenReturn(new ApiClient.ApiResponse(200, "{}"));
 
     saleClient.get(9L);
     verify(apiClient).get("/sales/9");
@@ -50,6 +49,6 @@ public class SaleApiClientTest {
     verify(apiClient).post("/sales", body);
 
     saleClient.cancel(9L, body);
-    verify(apiClient).put("/sales/9/cancel", body);
+    verify(apiClient).post("/sales/9/cancel", body);
   }
 }

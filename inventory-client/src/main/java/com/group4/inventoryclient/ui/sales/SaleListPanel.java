@@ -13,6 +13,8 @@ import com.group4.inventoryclient.util.SwingUtil;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Frame;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JButton;
@@ -44,7 +46,7 @@ public class SaleListPanel extends JPanel {
     this.saleApi = new SaleApiClient(apiClient);
     this.parentFrame = parentFrame;
 
-    searchBar.addFilter("Status", new String[] {"All", "Completed", "Cancelled"});
+    searchBar.addFilter("Status", new String[] {"All", "Paid", "Pending", "Cancelled"});
     searchBar.setSearchListener(q -> loadData(1));
     add(searchBar, BorderLayout.NORTH);
 
@@ -64,6 +66,18 @@ public class SaleListPanel extends JPanel {
     viewReceiptBtn.addActionListener(e -> viewReceipt());
     cancelBtn.addActionListener(e -> handleCancel());
     refreshBtn.addActionListener(e -> loadData(table.getCurrentPage()));
+    for (JButton btn : new JButton[] {newSaleBtn, viewReceiptBtn, cancelBtn, refreshBtn}) {
+      btn.setFocusable(false);
+    }
+    MouseAdapter captureSelectedRow =
+        new MouseAdapter() {
+          @Override
+          public void mousePressed(MouseEvent e) {
+            table.captureSelectedRowIndex();
+          }
+        };
+    viewReceiptBtn.addMouseListener(captureSelectedRow);
+    cancelBtn.addMouseListener(captureSelectedRow);
 
     loadData(1);
   }
@@ -131,12 +145,19 @@ public class SaleListPanel extends JPanel {
   }
 
   private void viewReceipt() {
-    int row = table.getSelectedRow();
+    int row = table.resolveSelectedRowIndex();
+    table.clearCapturedRowIndex();
     if (row == -1) {
       SwingUtil.showError(this, "Please select a sale");
       return;
     }
-    long id = (Long) table.getTable().getValueAt(row, 0);
+    long id;
+    try {
+      id = table.getLongValue(row, 0);
+    } catch (NumberFormatException e) {
+      SwingUtil.showError(this, "Invalid sale selected");
+      return;
+    }
     new Thread(
             () -> {
               try {
@@ -145,7 +166,17 @@ public class SaleListPanel extends JPanel {
                   JsonObject sale = response.getDataAsObject();
                   StringBuilder receipt = new StringBuilder();
                   receipt.append("========== RECEIPT ==========\n\n");
-                  receipt.append("Sale ID: ").append(sale.get("id").getAsLong()).append("\n");
+                  long saleId =
+                      sale.has("saleId")
+                          ? sale.get("saleId").getAsLong()
+                          : sale.get("id").getAsLong();
+                  receipt.append("Sale ID: ").append(saleId).append("\n");
+                  if (sale.has("invoiceNo") && !sale.get("invoiceNo").isJsonNull()) {
+                    receipt
+                        .append("Invoice: ")
+                        .append(sale.get("invoiceNo").getAsString())
+                        .append("\n");
+                  }
                   receipt
                       .append("Customer: ")
                       .append(
@@ -172,12 +203,20 @@ public class SaleListPanel extends JPanel {
                     JsonArray items = sale.getAsJsonArray("items");
                     for (int i = 0; i < items.size(); i++) {
                       JsonObject item = items.get(i).getAsJsonObject();
+                      String productName = "Product";
+                      if (item.has("productName") && !item.get("productName").isJsonNull()) {
+                        productName = item.get("productName").getAsString();
+                      } else if (item.has("product") && item.get("product").isJsonObject()) {
+                        JsonObject product = item.getAsJsonObject("product");
+                        if (product.has("productName")) {
+                          productName = product.get("productName").getAsString();
+                        } else if (product.has("name")) {
+                          productName = product.get("name").getAsString();
+                        }
+                      }
                       receipt
                           .append("  - ")
-                          .append(
-                              item.has("product") && !item.get("product").isJsonNull()
-                                  ? item.getAsJsonObject("product").get("name").getAsString()
-                                  : "Product")
+                          .append(productName)
                           .append(" x")
                           .append(item.get("quantity").getAsInt())
                           .append(" @ ")
@@ -214,12 +253,19 @@ public class SaleListPanel extends JPanel {
   }
 
   private void handleCancel() {
-    int row = table.getSelectedRow();
+    int row = table.resolveSelectedRowIndex();
+    table.clearCapturedRowIndex();
     if (row == -1) {
       SwingUtil.showError(this, "Please select a sale");
       return;
     }
-    long id = (Long) table.getTable().getValueAt(row, 0);
+    long id;
+    try {
+      id = table.getLongValue(row, 0);
+    } catch (NumberFormatException e) {
+      SwingUtil.showError(this, "Invalid sale selected");
+      return;
+    }
     String reason =
         JOptionPane.showInputDialog(
             this, "Enter cancellation reason:", "Cancel Sale", JOptionPane.PLAIN_MESSAGE);

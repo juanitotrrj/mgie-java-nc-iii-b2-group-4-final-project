@@ -12,6 +12,8 @@ import com.group4.inventoryclient.util.SwingUtil;
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.Frame;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JButton;
@@ -57,6 +59,18 @@ public class IcrListPanel extends JPanel {
     approveBtn.addActionListener(e -> handleApprove());
     rejectBtn.addActionListener(e -> handleReject());
     refreshBtn.addActionListener(e -> loadData(table.getCurrentPage()));
+    for (JButton btn : new JButton[] {submitBtn, approveBtn, rejectBtn, refreshBtn}) {
+      btn.setFocusable(false);
+    }
+    MouseAdapter captureSelectedRow =
+        new MouseAdapter() {
+          @Override
+          public void mousePressed(MouseEvent e) {
+            table.captureSelectedRowIndex();
+          }
+        };
+    approveBtn.addMouseListener(captureSelectedRow);
+    rejectBtn.addMouseListener(captureSelectedRow);
 
     loadData(1);
   }
@@ -139,15 +153,25 @@ public class IcrListPanel extends JPanel {
   }
 
   private void handleApprove() {
-    int row = table.getSelectedRow();
-    if (row == -1) {
-      SwingUtil.showError(this, "Please select a request");
+    int row = table.resolveSelectedRowIndex();
+    table.clearCapturedRowIndex();
+    if (row < 0) {
+      SwingUtil.showError(parentFrame, "Please select a request");
       return;
     }
-    long id = (Long) table.getTable().getValueAt(row, 0);
+    long id;
+    try {
+      id = table.getLongValue(row, 0);
+    } catch (NumberFormatException e) {
+      SwingUtil.showError(parentFrame, "Invalid request selected");
+      return;
+    }
     int confirm =
         JOptionPane.showConfirmDialog(
-            this, "Approve this inventory change request?", "Approve", JOptionPane.YES_NO_OPTION);
+            parentFrame,
+            "Approve this inventory change request?",
+            "Approve",
+            JOptionPane.YES_NO_OPTION);
     if (confirm == JOptionPane.YES_OPTION) {
       new Thread(
               () -> {
@@ -157,15 +181,16 @@ public class IcrListPanel extends JPanel {
                   if (response.isSuccess()) {
                     SwingUtilities.invokeLater(
                         () -> {
-                          SwingUtil.showInfo(this, "Request approved successfully");
+                          SwingUtil.showInfo(parentFrame, "Request approved successfully");
                           loadData(table.getCurrentPage());
                         });
                   } else {
                     SwingUtilities.invokeLater(
-                        () -> SwingUtil.showError(this, response.getErrorMessage()));
+                        () -> SwingUtil.showError(parentFrame, response.getErrorMessage()));
                   }
                 } catch (Exception ex) {
-                  SwingUtilities.invokeLater(() -> SwingUtil.showError(this, ex.getMessage()));
+                  SwingUtilities.invokeLater(
+                      () -> SwingUtil.showError(parentFrame, ex.getMessage()));
                 }
               })
           .start();
@@ -173,15 +198,22 @@ public class IcrListPanel extends JPanel {
   }
 
   private void handleReject() {
-    int row = table.getSelectedRow();
-    if (row == -1) {
-      SwingUtil.showError(this, "Please select a request");
+    int row = table.resolveSelectedRowIndex();
+    table.clearCapturedRowIndex();
+    if (row < 0) {
+      SwingUtil.showError(parentFrame, "Please select a request");
       return;
     }
-    long id = (Long) table.getTable().getValueAt(row, 0);
+    long id;
+    try {
+      id = table.getLongValue(row, 0);
+    } catch (NumberFormatException e) {
+      SwingUtil.showError(parentFrame, "Invalid request selected");
+      return;
+    }
     String reason =
         JOptionPane.showInputDialog(
-            this, "Enter rejection reason:", "Reject Request", JOptionPane.PLAIN_MESSAGE);
+            parentFrame, "Enter rejection reason:", "Reject Request", JOptionPane.PLAIN_MESSAGE);
     if (reason != null && !reason.trim().isEmpty()) {
       new Thread(
               () -> {
@@ -192,15 +224,16 @@ public class IcrListPanel extends JPanel {
                   if (response.isSuccess()) {
                     SwingUtilities.invokeLater(
                         () -> {
-                          SwingUtil.showInfo(this, "Request rejected successfully");
+                          SwingUtil.showInfo(parentFrame, "Request rejected successfully");
                           loadData(table.getCurrentPage());
                         });
                   } else {
                     SwingUtilities.invokeLater(
-                        () -> SwingUtil.showError(this, response.getErrorMessage()));
+                        () -> SwingUtil.showError(parentFrame, response.getErrorMessage()));
                   }
                 } catch (Exception ex) {
-                  SwingUtilities.invokeLater(() -> SwingUtil.showError(this, ex.getMessage()));
+                  SwingUtilities.invokeLater(
+                      () -> SwingUtil.showError(parentFrame, ex.getMessage()));
                 }
               })
           .start();

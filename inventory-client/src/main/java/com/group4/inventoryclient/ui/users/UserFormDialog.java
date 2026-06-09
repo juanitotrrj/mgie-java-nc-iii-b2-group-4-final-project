@@ -38,7 +38,9 @@ public class UserFormDialog extends FormDialog {
       if (existingUser.has("username")) {
         usernameField.setText(existingUser.get("username").getAsString());
       }
-      if (existingUser.has("full_name")) {
+      if (existingUser.has("fullName")) {
+        fullNameField.setText(existingUser.get("fullName").getAsString());
+      } else if (existingUser.has("full_name")) {
         fullNameField.setText(existingUser.get("full_name").getAsString());
       }
       if (existingUser.has("email")) {
@@ -81,7 +83,7 @@ public class UserFormDialog extends FormDialog {
   public Map<String, Object> getFormData() {
     Map<String, Object> data = new HashMap<>();
     data.put("username", usernameField.getText().trim());
-    data.put("full_name", fullNameField.getText().trim());
+    data.put("fullName", fullNameField.getText().trim());
     data.put("email", emailField.getText().trim());
     data.put("role", roleCombo.getSelectedItem().toString());
     data.put("status", statusCombo.getSelectedItem().toString());
