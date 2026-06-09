@@ -52,6 +52,8 @@ public class UserApiClientTest {
     when(apiClient.get(any())).thenReturn(new ApiClient.ApiResponse(200, "{}"));
     when(apiClient.post(any(), any())).thenReturn(new ApiClient.ApiResponse(201, "{}"));
     when(apiClient.put(any(), any())).thenReturn(new ApiClient.ApiResponse(200, "{}"));
+    when(apiClient.delete(any())).thenReturn(new ApiClient.ApiResponse(204, ""));
+    when(apiClient.post(any(), any())).thenReturn(new ApiClient.ApiResponse(200, "{}"));
 
     userClient.get(2L);
     verify(apiClient).get("/users/2");
@@ -64,9 +66,9 @@ public class UserApiClientTest {
     verify(apiClient).put("/users/2", body);
 
     userClient.deactivate(2L);
-    verify(apiClient).put("/users/2/deactivate", null);
+    verify(apiClient).delete("/users/2");
 
     userClient.resetPassword(2L, body);
-    verify(apiClient).put("/users/2/reset-password", body);
+    verify(apiClient).post("/users/2/reset-password", body);
   }
 }

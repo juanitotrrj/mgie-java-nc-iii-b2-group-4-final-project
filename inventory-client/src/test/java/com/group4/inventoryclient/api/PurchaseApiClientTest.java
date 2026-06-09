@@ -50,7 +50,6 @@ public class PurchaseApiClientTest {
   public void get_create_receive_cancel_useCorrectPaths() throws IOException {
     when(apiClient.get(any())).thenReturn(new ApiClient.ApiResponse(200, "{}"));
     when(apiClient.post(any(), any())).thenReturn(new ApiClient.ApiResponse(201, "{}"));
-    when(apiClient.put(any(), any())).thenReturn(new ApiClient.ApiResponse(200, "{}"));
 
     purchaseClient.get(4L);
     verify(apiClient).get("/purchases/4");
@@ -60,9 +59,9 @@ public class PurchaseApiClientTest {
     verify(apiClient).post("/purchases", body);
 
     purchaseClient.receive(4L, body);
-    verify(apiClient).put("/purchases/4/receive", body);
+    verify(apiClient).post("/purchases/4/receive", body);
 
     purchaseClient.cancel(4L, body);
-    verify(apiClient).put("/purchases/4/cancel", body);
+    verify(apiClient).post("/purchases/4/cancel", body);
   }
 }
