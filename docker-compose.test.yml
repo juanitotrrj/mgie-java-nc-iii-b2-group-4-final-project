@@ -1,0 +1,17 @@
+services:
+  mysql-test:
+    image: mysql:8.0
+    container_name: g4ims-mysql-test
+    environment:
+      MYSQL_ROOT_PASSWORD: root_test
+      MYSQL_DATABASE: g4ims_test
+      MYSQL_USER: g4ims_test
+      MYSQL_PASSWORD: g4ims_test
+    ports:
+      - "3307:3306"
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 12

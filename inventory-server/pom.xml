@@ -23,7 +23,9 @@
     <slf4j.version>1.7.36</slf4j.version>
     <logback.version>1.2.12</logback.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
+    <poi.version>5.2.5</poi.version>
     <junit.version>4.13.2</junit.version>
+    <jacoco.version>0.8.12</jacoco.version>
   </properties>
 
   <dependencies>
@@ -88,9 +90,48 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>${poi.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.webjars</groupId>
+      <artifactId>swagger-ui</artifactId>
+      <version>5.17.14</version>
+    </dependency>
+
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>4.11.0</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest</artifactId>
+      <version>2.2</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-core</artifactId>
+      <version>1.37</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.openjdk.jmh</groupId>
+      <artifactId>jmh-generator-annprocess</artifactId>
+      <version>1.37</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -153,6 +194,227 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.3.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.2.5</version>
+        <configuration>
+          <excludes>
+            <exclude>**/integration/**</exclude>
+            <exclude>**/api/**</exclude>
+            <exclude>**/repository/**</exclude>
+            <exclude>**/perf/**</exclude>
+          </excludes>
+          <systemPropertyVariables>
+            <g4ims.env.file>${g4ims.env.file}</g4ims.env.file>
+            <e2e.server.url>${e2e.server.url}</e2e.server.url>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>3.2.5</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <skipITs>true</skipITs>
+          <systemPropertyVariables>
+            <g4ims.env.file>${g4ims.env.file}</g4ims.env.file>
+            <e2e.server.url>${e2e.server.url}</e2e.server.url>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
+        <executions>
+          <execution>
+            <id>prepare-agent</id>
+            <goals>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>integration</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <skipITs>false</skipITs>
+              <includes>
+                <include>**/integration/**/*IT.java</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>api</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <skipITs>false</skipITs>
+              <includes>
+                <include>**/api/**/*IT.java</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>repository</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <skipITs>false</skipITs>
+              <includes>
+                <include>**/repository/**/*IT.java</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>perf</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <includes>
+                <include>**/perf/**/*Test.java</include>
+              </includes>
+              <excludes combine.self="override"/>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>coverage</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>report-aggregate</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>report</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>coverage-check</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>check</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <configuration>
+                  <rules>
+                    <rule>
+                      <element>BUNDLE</element>
+                      <limits>
+                        <limit>
+                          <counter>LINE</counter>
+                          <value>COVEREDRATIO</value>
+                          <minimum>0.80</minimum>
+                        </limit>
+                        <limit>
+                          <counter>BRANCH</counter>
+                          <value>COVEREDRATIO</value>
+                          <minimum>0.70</minimum>
+                        </limit>
+                      </limits>
+                    </rule>
+                  </rules>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>full-server</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <skipITs>false</skipITs>
+              <includes>
+                <include>**/integration/**/*IT.java</include>
+                <include>**/api/**/*IT.java</include>
+                <include>**/repository/**/*IT.java</include>
+              </includes>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

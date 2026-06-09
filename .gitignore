@@ -21,5 +21,6 @@ logs/
 storage/
 
 # Environment (never commit real secrets)
+.env
 g4ims-server.env
 g4ims-client.env

@@ -75,7 +75,7 @@ public final class EnvConfig {
   }
 
   public static String dbName() {
-    return get("DB_NAME", "inventory_system_group4");
+    return get("DB_NAME", "g4ims_local");
   }
 
   public static String dbUser() {
@@ -510,8 +510,7 @@ public final class EnvConfig {
   // ─── Helper Methods ─────────────────────────────────────────────────────────
 
   private static String get(String key, String defaultValue) {
-    String value = System.getenv(PREFIX + key);
-    return (value != null && !value.isEmpty()) ? value : defaultValue;
+    return DotEnvLoader.resolve(PREFIX + key, defaultValue);
   }
 
   private static int getInt(String key, int defaultValue) {

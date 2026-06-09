@@ -154,36 +154,7 @@ public class MigrationRunner {
   }
 
   private List<Migration> discoverMigrations() {
-    List<Migration> migrations = new ArrayList<>();
-    try (InputStream is = getClass().getClassLoader().getResourceAsStream(MIGRATIONS_PATH);
-        BufferedReader reader =
-            is != null
-                ? new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
-                : null) {
-
-      if (reader == null) {
-        // Fall back to reading from migrations.index resource
-        return discoverFromIndex();
-      }
-
-      String line;
-      while ((line = reader.readLine()) != null) {
-        Matcher matcher = FILENAME_PATTERN.matcher(line.trim());
-        if (matcher.matches()) {
-          int version = Integer.parseInt(matcher.group(1));
-          String description = matcher.group(2);
-          Migration m = new Migration(version, description, line.trim());
-          String sql = loadResourceSql(MIGRATIONS_PATH + line.trim());
-          m.setUpSql(sql);
-          migrations.add(m);
-        }
-      }
-    } catch (IOException e) {
-      return discoverFromIndex();
-    }
-
-    Collections.sort(migrations, (a, b) -> Integer.compare(a.getVersion(), b.getVersion()));
-    return migrations;
+    return discoverFromIndex();
   }
 
   private List<Migration> discoverFromIndex() {
@@ -266,8 +237,17 @@ public class MigrationRunner {
     if (sql == null) return statements;
     for (String stmt : sql.split(";")) {
       String trimmed = stmt.trim();
-      if (!trimmed.isEmpty() && !trimmed.startsWith("--")) {
-        statements.add(trimmed);
+      if (trimmed.isEmpty()) continue;
+      StringBuilder cleaned = new StringBuilder();
+      for (String line : trimmed.split("\\n")) {
+        String l = line.trim();
+        if (!l.startsWith("--")) {
+          cleaned.append(l).append('\n');
+        }
+      }
+      String result = cleaned.toString().trim();
+      if (!result.isEmpty()) {
+        statements.add(result);
       }
     }
     return statements;
